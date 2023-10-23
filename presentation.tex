@@ -1,14 +1,10 @@
 \documentclass{beamer}
-%\usepackage{moreverb}
 \usepackage{fancyvrb}
 \usepackage{framed}
 \usepackage{caption}
 \usepackage{qrcode}
-
-% Theme choice:
 \usetheme{CambridgeUS}
 
-% Title page details: 
 \title{HEVM, a Smart Contract Verification Tool} 
 \author{Mate Soos, Ethereum Foundation}
 \date{25th of October 2023}
@@ -16,15 +12,9 @@
 
 
 \begin{document}
-
-% Title page frame
 \begin{frame}
     \titlepage 
 \end{frame}
-
-% Remove logo from the next slides
-\logo{}
-
 
 % Outline frame
 \begin{frame}{Outline}
@@ -88,8 +78,6 @@ function (...) public {
   /uses lots of gas/
 }
     \end{Verbatim}
- 
-  %\captionof{fileformat}{Simple but high gas}
   \end{minipage}
   \begin{minipage}[b]{0.45\textwidth}
   \begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
@@ -99,7 +87,6 @@ function (...) public {
   /uses less gas/
 }
 \end{Verbatim}
-%\captionof{fileformat}{Complicated but low gas}
 \end{minipage}
 
 HEVM can give you the exact \textbf{call to trigger the discrepancy} between the two functions. This way, you can safely improve the gas performance of your code.
@@ -251,20 +238,5 @@ HEVM is written in Haskell, but there are many areas that can be contributed to 
 \end{Verbatim}
 \end{frame}
 
-
-
-% Blocks frame
-%\section{Blocks in Beamer}
-%\begin{frame}{Blocks in Beamer}
-    %\begin{block}{Standard Block}
-        %This is a standard block.
-    %\end{block}
-    %\begin{alertblock}{Alert Message}
-        %This block presents alert message.
-    %\end{alertblock}
-    %\begin{exampleblock}{An example of typesetting tool}
-        %Example: MS Word, \LaTeX{}
-%    \end{exampleblock}
-%\end{frame} 
 
 \end{document}
