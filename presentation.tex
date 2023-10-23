@@ -93,19 +93,17 @@ HEVM can give you the exact \textbf{call to trigger the discrepancy} between the
 \end{frame}
 
 
-\section{HEVM Internals}
-\begin{frame}{How it works: High level overview}
-HEVM symbolic execution works via the following high-level steps:
 
-\begin{enumerate}
-\item Symbolically interpret each EVM opcode 1-by-1
-\item Forks interpreter for all branches
-\item Builds up a symbolic expression to describe all branches
-\item Once finished, filters endstates for e.g. assert failures (configurable)
-\item Simplifies the expression
-\item Sends simplified expression to SMT solver
-\item Reconstructs call/state to explain to the user the issue(s) found
-\end{enumerate}
+
+\begin{frame}[fragile=singleslide]{Limitations of HEVM}
+While HEVM aims to be fully-featured, it has a number of inherent limitations:
+
+\begin{itemize}
+\item Loops can be challenging. The option \texttt{--max-iterations N} can raise the iteration limit until which loops are examined.
+\item Complicated mathematical expressions can pose a challenge, especially division or exponentiation.
+\item It is important to set all known invariants at the start of the test via \texttt{require()} to speed up solving.
+\item HEVM itself is not verified, and neither are the solvers we use. The solvers may eventually emit a proof, which we could verify, though.
+\end{itemize}
 \end{frame}
 
 \begin{frame}[fragile=singleslide]{How it works: The Intermediate Representation}
@@ -131,7 +129,7 @@ PLEq (Add (Var "a") (Lit 1)) (Var "a")
 Notice: we use less-or-equal, because we want a \textbf{counterexample}
 \end{frame}
 
-\begin{frame}[fragile=singleslide]{How it works: Passing the expression to an SMT solver}
+\begin{frame}[fragile=singleslide]{How it Works: Passing the expression to an SMT solver}
 
 Let's say the expression is:
 
