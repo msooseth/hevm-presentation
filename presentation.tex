@@ -94,7 +94,7 @@ function (uint a, uint b) public pure {
 }
 \end{Verbatim}
 
-Fuzzing nevers find this edge-case. Symbolic execution always finds it.
+Fuzzing never find this edge-case. Symbolic execution always finds it.
 \bigskip 
 
 \textbf{In general, fuzzing is faster, but is incomplete. Symbolic execution is slower but complete.}
@@ -164,7 +164,7 @@ While HEVM aims to be fully-featured, it has a number of inherent limitations:
 \begin{frame}[fragile=singleslide]{How it works: The Intermediate Representation}
 \small
 
-Through the interpreter we create the global expression that captures all endstates. We then take each endstate out and filter it for things we are looking for, e.g. assertion failures. This is our intermediate representation, similar to what YUL is for Solidity. Let's take the previous example:
+Through the interpreter we create the global expression that captures all end-states. We then take each end-state out and filter it for things we are looking for, e.g. assertion failures. This is our intermediate representation, similar to what YUL is for Solidity. Let's take the previous example:
 
 
 \begin{Verbatim}[frame=single, framerule=0.2mm,framesep=2mm,fontsize=\small]
@@ -267,7 +267,7 @@ We are keen on in real-world benchmarks that you feel could be interesting for t
 \end{frame}
 
 
-\begin{frame}[fragile=singleslide]{Contributing back to HEVM}
+\begin{frame}[fragile=singleslide]{Contributing Back to HEVM}
 
 The HEVM repository uses\texttt{nix} for ease of development:
 
@@ -278,7 +278,7 @@ nix-shell
 cabal run exe:hevm -- test
 \end{Verbatim}
 
-You now have a full development environment, with all neccessary tools installed, including Z3.
+You now have a full development environment, with all necessary tools installed, including Z3.
 \bigskip 
 
 HEVM is written in Haskell, but there are many areas that can be contributed to without deep knowledge of Haskell. For example, expression simplification:
