@@ -23,14 +23,44 @@
 
 
 % Lists frame
+
+
 \section{Overview of HEVM}
+\begin{frame}{A Quick Recap of Testing}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+   Testing is a discipline. Reliable systems usually have a \textbf{testing strategy} encompassing at least parts of the test pyramid.
+\end{column}
+\begin{column}{0.5\textwidth}  %%<--- here
+    \begin{center}
+     \includegraphics[scale=0.45]{triangle3.png}
+     \end{center}
+\end{column}
+\end{columns}
+\bigskip
+
+
+As part of the tests, there are usually (1) a set of tests against \textbf{known bad states} that should never be entered, and (2) a set of tests checking the system is currently in a known good state, also called \textbf{invariant tests}.
+\bigskip
+
+
+HEVM can help with finding ways to trigger \emph{all} known bad states and validate that all invariants \emph{always} hold.
+
+
+
+\end{frame}
+
+
 \begin{frame}{What is HEVM}
 
 Can run EVM bytecode concretely like geth, or can run EVM bytecode symbolically:
 \begin{itemize}
+\item Takes as input known bad state/invariant test
 \item Examines all execution paths
 \item Finds the set of requirements to reach them
 \item Runs an external tool to find input to reach them
+\item Displays call \& state needed to trigger the bad state/invalidate the invariant
 \end{itemize}
 \end{frame}
 
@@ -45,7 +75,29 @@ function (uint a) public pure {
 \end{Verbatim}
 
 
-HEVM can find the case where $a=0xffffff\ldots$ to trigger the assert due to roll-around. HEVM gives you the \textbf{exact call to reproduce the bug}.
+HEVM can find the case where $a=0xffffff\ldots$ to trigger the assert due to roll-around. HEVM gives you the \textbf{exact call to reproduce the bug}. This way of using HEVM can find a \emph{known-bad state}.
+
+\end{frame}
+
+\begin{frame}[fragile=singleslide]{Symbolic Execution vs Fuzzing}
+Say your code looks like this:
+
+\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
+function (uint a, uint b) public pure {	
+	// solution: a = 10000983843024
+	//           b = 9877982748934
+	
+	if (a * 2 + b == 29879950434982 &&
+	    b / 2 == 4938991374467) {
+		assert(false); // bad things happen
+	}
+}
+\end{Verbatim}
+
+Fuzzing nevers find this edge-case. Symbolic execution always finds it.
+\bigskip 
+
+\textbf{In general, fuzzing is faster, but is incomplete. Symbolic execution is slower but complete.}
 
 \end{frame}
 
@@ -62,6 +114,8 @@ function (uint a) public pure {
 	assert(my_invariant());
 }
 \end{Verbatim}
+
+Here, instead of a known-bad state, we validate that we are always in state that matches our expectations.
 \end{frame}	
 
 
@@ -235,6 +289,28 @@ HEVM is written in Haskell, but there are many areas that can be contributed to 
       | otherwise = add a b
 \end{Verbatim}
 \end{frame}
+
+\section{Conclusions}
+\begin{frame}{Conclusions}
+
+HEVM is a fully-featured, easy-to-use tool that can help find bugs in your code. It can be a useful \textbf{part of your testing strategy}.
+\bigskip
+
+An example testing strategy could look like:
+\begin{itemize}
+\item Unit tests, component tests, integraton tests, user-acceptance tests
+\item Manual \& exploratory tests (e.g. penetration testing)
+\item Known bad state \& invariant checking through fuzzing \& symbolic execution
+\end{itemize}
+\bigskip
+
+Download HEVM from
+\smallskip
+
+\qrcode{https://github.com/ethereum/hevm/releases}
+
+\end{frame}
+
 
 
 \end{document}
