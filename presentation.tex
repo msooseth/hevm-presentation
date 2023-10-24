@@ -100,9 +100,9 @@ While HEVM aims to be fully-featured, it has a number of inherent limitations:
 
 \begin{itemize}
 \item Loops can be challenging. The option \texttt{--max-iterations N} can raise the iteration limit until which loops are examined.
-\item Complicated mathematical expressions can pose a challenge, especially division or exponentiation.
+\item Complicated mathematical expressions such as exponentiation can pose a challenge.
 \item It is important to set all known invariants at the start of the test via \texttt{require()} to speed up solving.
-\item HEVM itself is not verified, and neither are the solvers we use. The solvers may eventually emit a proof, which we could verify, though.
+\item HEVM itself is not verified, and neither are the solvers we use. However, some solvers will in the future be able to emit a proof, which can be verified.
 \end{itemize}
 \end{frame}
 
