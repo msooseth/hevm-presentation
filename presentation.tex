@@ -45,7 +45,7 @@ As part of the tests, there are usually (1) a set of tests against \textbf{known
 \bigskip
 
 
-HEVM can help with finding ways to trigger \emph{all} known bad states and validate that all invariants \emph{always} hold.
+HEVM can help with finding ways to trigger \emph{all} known bad states and validate that invariants \emph{always} hold.
 
 
 
@@ -59,7 +59,7 @@ Can run EVM bytecode concretely like geth, or can run EVM bytecode symbolically:
 \item Takes as input known bad state/invariant test
 \item Examines all execution paths
 \item Finds the set of requirements to reach them
-\item Runs an external tool to find input to reach them
+\item Runs external tool (SMT solver) to find input to reach them
 \item Displays call \& state needed to trigger the bad state/invalidate the invariant
 \end{itemize}
 \end{frame}
@@ -154,6 +154,7 @@ While HEVM aims to be fully-featured, it has a number of inherent limitations:
 
 \begin{itemize}
 \item Loops can be challenging. The option \texttt{--max-iterations N} can raise the iteration limit until which loops are examined.
+\item Recursion, and parametric calls can cause HEVM to only partially explore the state
 \item Complicated mathematical expressions such as exponentiation can pose a challenge.
 \item It is important to set all known invariants at the start of the test via \texttt{require()} to speed up solving.
 \item HEVM itself is not verified, and neither are the solvers we use. However, some solvers will in the future be able to emit a proof, which can be verified.
@@ -296,12 +297,7 @@ HEVM is written in Haskell, but there are many areas that can be contributed to 
 HEVM is a fully-featured, easy-to-use tool that can help find bugs in your code. It can be a useful \textbf{part of your testing strategy}.
 \bigskip
 
-An example testing strategy could look like:
-\begin{itemize}
-\item Unit tests, component tests, integraton tests, user-acceptance tests
-\item Manual \& exploratory tests (e.g. penetration testing)
-\item Known bad state \& invariant checking through fuzzing \& symbolic execution
-\end{itemize}
+HEVM can help you gain more confidence in the correctness of your tool. It can be especially helpful to validate that certain catastrophic failure modes cannot be triggered. HEVM, however, can be incomplete: it can struggle with loops, complicated/recursive call chains, and complicated mathematical expressions.
 \bigskip
 
 Download HEVM from
