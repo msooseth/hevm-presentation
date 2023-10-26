@@ -68,7 +68,7 @@ Can run EVM bytecode \textbf{concretely} like geth, or can run EVM bytecode \tex
 Say your code looks like this:
 \begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
 function overflow(uint a) public pure {
-	uint b
+	uint b;
 	unchecked { b = a + 1;}
 	assert(b > a);
 }
@@ -169,7 +169,7 @@ Through the interpreter we create the global expression that captures all end-st
 
 \begin{Verbatim}[frame=single, framerule=0.2mm,framesep=2mm,fontsize=\small]
 function overflow(uint a) public pure {
-	uint b
+	uint b;
 	unchecked { b = a + 1;}
 	assert(b > a);
 }
