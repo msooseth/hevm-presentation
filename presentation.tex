@@ -54,11 +54,11 @@ HEVM can help with finding ways to trigger \emph{all} known bad states and valid
 
 \begin{frame}{What is HEVM}
 
-Can run EVM bytecode concretely like geth, or can run EVM bytecode symbolically:
+Can run EVM bytecode \textbf{concretely} like geth, or can run EVM bytecode \textbf{symbolically}:
 \begin{itemize}
 \item Takes as input known bad state/invariant test
 \item Examines all execution paths
-\item Finds the set of requirements to reach them
+\item Finds the set of requirements to reach all failing paths
 \item Runs external tool (SMT solver) to find input to reach them
 \item Displays call \& state needed to trigger the bad state/invalidate the invariant
 \end{itemize}
@@ -67,7 +67,7 @@ Can run EVM bytecode concretely like geth, or can run EVM bytecode symbolically:
 \begin{frame}[fragile=singleslide]{Symbolic Execution: Basics}
 Say your code looks like this:
 \begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
-function (uint a) public pure {
+function overflow(uint a) public pure {
 	uint b
 	unchecked { b = a + 1;}
 	assert(b > a);
@@ -83,7 +83,7 @@ HEVM can find the case where $a=0xffffff\ldots$ to trigger the assert due to rol
 Say your code looks like this:
 
 \begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
-function (uint a, uint b) public pure {	
+function tricky(uint a, uint b) public pure {
 	// solution: a = 10000983843024
 	//           b = 9877982748934
 	
@@ -108,7 +108,7 @@ function my_invariant() private pure returns inv {
 	inv = ...calculate invariant...
 }
 	
-function (uint a) public pure {
+function transfer(uint a) public pure {
 	require(my_invariant());
 	... your function code here ....
 	assert(my_invariant());
@@ -168,7 +168,7 @@ Through the interpreter we create the global expression that captures all end-st
 
 
 \begin{Verbatim}[frame=single, framerule=0.2mm,framesep=2mm,fontsize=\small]
-function (uint a) public pure {
+function overflow(uint a) public pure {
 	uint b
 	unchecked { b = a + 1;}
 	assert(b > a);
