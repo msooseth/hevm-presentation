@@ -8,7 +8,7 @@
 
 \title{HEVM, a Smart Contract Verification Tool} 
 \author{Mate Soos, Ethereum Foundation}
-\date{25th of October 2023}
+\date{12th of December 2023}
 %\logo{sdfsdaf}
 
 
@@ -38,7 +38,7 @@ A lot of what I did were rewrite systems: preprocessors, inprocessors, etc. HEVM
 
 % Lists frame
 
-\section{Testing and the Ethereum Blockchain}
+\section{A Recap: Testing, the Ethereum Blockchain, and Symbolic Execution}
 \begin{frame}{A Quick Recap of Testing}
 
 \begin{columns}
@@ -69,7 +69,7 @@ Symbolic execution can help with finding ways to trigger \emph{all} negative tes
 \begin{frame}{A Quick Recap of Ethereum}
 Ethereum is the second largest cryptocurrency in terms of value. Ethereum has:
 \begin{itemize}
-\item Stack-based VM, the Ethereum VM (EVM)
+\item Stack-based VM, the EVM. Most popular executor of EVM: geth
 \item Contracts with code and storage
 \item ACID execution semantics
 \item EVM-specific programming language, Solidity and its IR, YUL
@@ -79,15 +79,14 @@ Ethereum is the second largest cryptocurrency in terms of value. Ethereum has:
 
 Downsides:
 \begin{itemize}
-\item Code and data are not clearly separated
+\item Code and data are not clearly separated ("EOF" will solve)
 \item JUMP destinations are known but dynamic jumps are possible
-\item All EVM instructions operate on 256b values (!)
+\item All EVM instructions operate on 256b values
 \end{itemize}
 
 \end{frame}
 
 
-\section{Symbolic Execution: A Recap}
 \begin{frame}[fragile=singleslide]{Symbolic Execution -- straight line program}
 
 Most execution works by running instructions concretely:
@@ -148,10 +147,10 @@ For sybolic execution, we end up having to follow two executions. This can becom
 \begin{itemize}
 \item Uses the Ethereum Virtual Machine (EVM) for execution
 \item Can do both concrete and symbolic execution
-\item Takes as input negative/invariant test
+\item Takes as input negative/invariant test or suspected-equivalent code
 \item Examines \emph{all}\footnote{loops/recursion is an issue, we have a loop/depth limit} execution paths from the starting state
 \item Finds the set of requirements to reach all failing paths (i.e. \texttt{assert}-s)
-\item Runs external tool (SMT solver) to find input to reach them
+\item Runs internal fuzzer or external SMT solver to find input to reach them
 \item Displays call needed to trigger the bad state/invalidate the invariant
 \end{itemize}
 \end{frame}
@@ -171,7 +170,7 @@ For sybolic execution, we end up having to follow two executions. This can becom
 %
 %\end{frame}
 
-\begin{frame}[fragile=singleslide]{Symbolic Execution vs Fuzzing}
+\begin{frame}[fragile=singleslide]{Symbolic Execution: Negative Tests}
 Say your code looks like this:
 
 \begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
@@ -243,10 +242,30 @@ HEVM can give you the exact \textbf{call to trigger the discrepancy} between the
 
 \end{frame}
 
+\begin{frame}{HEVM's Symbolic Executor}
+HEVM's symbolic executor is very powerful:
+\begin{itemize}
+\item Operates on \emph{bytecode} so runs everything every deployed to the chain
+\item Understands all of the EVM: stack, call frames, memory, storage, calldata
+\item Can be set up to run at any point in time (blockhain history), through RPC
+\item Can chain any number of symbolic transactions
+\item Fuzzed against concrete execution (geth)
+\end{itemize}
+\bigskip
+
+Limitations:
+\begin{itemize}
+\item Cannot deal with symolic gas other than ignoring it
+\item Symbolic offset/size memory copy is not yet implemented
+\item Because it runs on bytecode, it needs to recover variable bitwidths, loops, etc.
+\end{itemize}
+\end{frame}
+
+
 \begin{frame}[fragile=singleslide]{Intermediate Representation}
 \small
 
-Through the interpreter we create the global expression that captures all end-states. We then take each end-state out and filter it for things we are looking for, e.g. assertion failures. This is our intermediate representation, similar to what YUL is for Solidity. Let's take the example:
+Through the symbolic execution engine we create an expression that captures all end-states. We then take each end-state out and filter it for things we are looking for, e.g. assertion failures. Let's take the example:
 
 
 \begin{Verbatim}[frame=single, framerule=0.2mm,framesep=2mm,fontsize=\small]
@@ -267,20 +286,19 @@ Notice: we use less-or-equal, because we want a \textbf{counterexample}
 \end{frame}
 
 \begin{frame}[fragile=singleslide]{Intermediate Representation: Writes}
-When writing on top of a buffer, we represent it as:
-
+Writing in a buffer is represented as a chain of writes:
 \begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
-(ConcreteBuf "") // empty buffer
-WriteWord (Lit 1) (Var "a") (ConcreteBuf "") //first write
-WriteWord (Lit 2) (Var "b")  (WriteWord (Lit 1) (Var "a") (ConcreteBuf ""))
+AbstractBuf "a" // empty buffer
+WriteWord (Lit 1) (Var "a") (AbstractBuf "a") //1st write
+WriteWord (Lit 2) (Var "b") (WriteWord (Lit 1) (Var "a") (AbstractBuf "a")) //2nd
 \end{Verbatim}
-This can later be collapsed, e.g. in case the variables are concretized.
+This can later be collapsed, e.g. in case the variables are concretized. We understand \texttt{(AbstractBuf "var")} and \texttt{(ConcreteBuf "value")}
 \bigskip
 
-While this can be inefficient, it allows us perform symbolic execution as fast as possible, only reading/writing/transforming data at each instruction. We can (and do) later collapse \& simplify these writes.
+While this can be inefficient, it allows us perform symbolic execution as fast as possible, only prepending an operation for each instruction. We can (and do) later collapse \& simplify these writes.
 \bigskip
 
-NOTE: another way of doing this would be e.g. interval graphs
+NOTE: Another way of doing this would be e.g. interval graphs. They could allow for symbolic offset/size copy
 \end{frame}
 
 \begin{frame}[fragile=singleslide]{Intermediate Representation: Keccak}
@@ -297,7 +315,7 @@ It's very expensive to accurately represent Keccak in SMT. Hence, we represent K
 \end{frame}
 
 \begin{frame}[fragile=singleslide]{Intermediate Representation: Maps}
-Storage of contracts is unstructured array of uint256. Solidity uses: $keccak (bytes32(key) || bytes32(id))$ to map $mymap[key]$ where $id$ is the map index:
+Storage of contracts is an unstructured array of uint256. Solidity uses: $keccak (bytes32(key) || bytes32(id))$ to map $mymap[key]$ where $id$ is the map index:
 
 \begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
 contract C {
@@ -305,14 +323,14 @@ contract C {
     mapping(uint => uint) mymap_id1;
 }
 \end{Verbatim}
-We have solidity-specific rewrite rules to strip writes. So when writing two $keccak (bytes32(key) || bytes32(id))$-s on top of each other, and then reading, we traverse the list of writes to pick out the potentially matching one(s).
+We have Solidity-specific rewrite rules to strip writes. So when writing two $keccak (bytes32(key) || bytes32(id))$-s on top of each other, and then reading, we traverse the list of writes to pick out the potentially matching one(s).
 \bigskip
 
 Notice that the SMT solver can use our Keccak rules to do this, too, but it's a lot slower
 \end{frame}
 
 \begin{frame}[fragile=singleslide]{Intermediate Representation: Simplification} 
-We do all following rewrites to fixedpoint:
+We do all the following rewrites to fixedpoint:
 \begin{itemize}
 \item Canonicalization of all commutative operators (concrete value first)
 \item Canocicalization of all less-than/greater-than/etc operators
@@ -361,7 +379,7 @@ Fuzzing sounds strange given that HEVM is a symbolic execution engine. However:
 \end{itemize}
 \bigskip
 
-Notice that geth, the normal EVM concrete executor is incredibly slow. Hence a transpiled IR could achivee serious speedup.
+Notice that geth, the normal EVM concrete executor is incredibly slow. Hence a transpiled IR could achive serious speedup.
 
 \end{frame}
 
@@ -423,15 +441,12 @@ hevm test
 \end{frame}
 
 
-\begin{frame}[fragile=singleslide]{Benchmarking}
+\begin{frame}[fragile=singleslide]{Results}
 \small
-To test and improve the performance of HEVM, we use a benchmark repository [1]. Here, you can test your example problem against other full-featured symbolic execution engine Halmos [2]:
+To test and improve the performance of HEVM, we use a benchmark repository [1] developed in conjunction with the Halmos team [2], and soon we will have the K framework contributing as well.
 
-\includegraphics[scale=0.7]{boxchart}
-
-\bigskip
+\includegraphics[scale=0.75]{boxchart}
 [1] \url{https://github.com/eth-sc-comp/benchmarks/}
-
 [2] \url{https://github.com/a16z/halmos}
 \end{frame}
 
@@ -455,7 +470,7 @@ To test and improve the performance of HEVM, we use a benchmark repository [1]. 
 %\end{Verbatim}
 %\end{frame}
 
-\begin{frame}[fragile=singleslide]{Limitations}
+\begin{frame}[fragile=singleslide]{Limitations \& Future Work}
 HEVM has a number of inherent limitations:
 
 \begin{itemize}
@@ -464,19 +479,27 @@ HEVM has a number of inherent limitations:
 \item Complicated mathematical expressions (e.g. division, modulo) can cause a challenge
 \item HEVM itself is not verified, and neither are the SMT solvers. Some SMT solvers will in be able to emit a proof, though
 \end{itemize}
+
+Future work:
+\begin{itemize}
+\item CFG extraction to better handle recursion and loops
+\item Invariant computation for loops
+\item Time-limited, early-abort SMT solving and fuzzing
+\item Some pre-written invariants and negative tests, moving towards static analysis
+\end{itemize}
 \end{frame}
 
 \section{Conclusions}
 \begin{frame}[fragile=singleslide]{Conclusions}
 
-HEVM is a fully-featured, easy-to-use tool that can help find bugs in EVM bytecode. It is fully-featured, with a robust internal representation (IR) that can significantly lower the burden on the SMT solvers used. It is tailored to the EVM system by having Keccak- and array/map-specific rewrites to lower the complexity of the final SMT expression.
+HEVM is a fully-featured, easy-to-use tool that can help find bugs in EVM bytecode. Its sophisticated IR is tailored to the EVM via Keccak- and array/map-specific rewrites to lower the complexity of solving the final SMT expression.
 \bigskip
 
-Download HEVM from \url{https://github.com/ethereum/hevm/releases}
-\bigskip
+%Download HEVM from \url{https://github.com/ethereum/hevm/releases}
+%\bigskip
 %\qrcode{https://github.com/ethereum/hevm/releases}
 
-Development environment is easy to set up:
+Development environment:
 \begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
 sh <(curl -L https://nixos.org/nix/install) --daemon
 git clone https://github.com/ethereum/hevm/
