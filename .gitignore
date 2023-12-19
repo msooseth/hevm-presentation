@@ -1,0 +1,11 @@
+presentation.pdf
+*.out
+*.nav
+*.log
+*.aux
+*.snm
+*.synctex.gz
+*.tex.bak
+*.toc
+*.vrb
+HEVM-presentation Ethereum Meetup 25th Oct 2023.pdf
