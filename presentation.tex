@@ -291,13 +291,13 @@ AbstractBuf "a" // empty buffer
 WriteWord (Lit 1) (Var "a") (AbstractBuf "a") //1st write
 WriteWord (Lit 2) (Var "b") (WriteWord (Lit 1) (Var "a") (AbstractBuf "a")) //2nd
 \end{Verbatim}
-This can later be collapsed, e.g. in case the variables are concertized. We understand \texttt{(AbstractBuf "var")} and \texttt{(ConcreteBuf "value")}
+This can later be collapsed, e.g. in case the variables are concertized. We use \texttt{(AbstractBuf "var")} for symbolic, and \texttt{(ConcreteBuf "value")} for concrete values.
 \bigskip
 
 While this can be inefficient, it allows us perform symbolic execution as fast as possible, only prepending an operation for each instruction. We can (and do) later collapse \& simplify these writes.
 \bigskip
 
-NOTE: Another way of doing this would be e.g. interval graphs. They could allow for symbolic offset/size copy
+NOTE: Another way of doing this would be e.g. interval graphs
 \end{frame}
 
 \begin{frame}[fragile=singleslide]{Intermediate Representation: Keccak}
@@ -345,7 +345,7 @@ We do all the following rewrites to fixedpoint:
 
 \begin{frame}[fragile=singleslide]{Intermediate Representation: Haskell to the Rescue}
 
-Haskell supports algebraic data types (ADTs), so our intermediate representation can fully typed. Furthermore, Haskell supports pattern matching, so we rewrite rules are easy to read \& write:
+Haskell supports algebraic data types (ADTs), so our intermediate representation (IR) can be fully typed. Furthermore, Haskell supports pattern matching, so our rewrite rules are easy to read \& write:
 \begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
     -- syntactic Eq reduction
     go (Eq (Lit a) (Lit b))
@@ -388,7 +388,6 @@ The IR is translated in a straightforward manner to SMT. Let's say the expressio
 \begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
 PLEq (Add (Var "a") (Lit 1)) (Var "a")
 \end{Verbatim}
-\bigskip
 
 The SMT expression for this could be:
 
@@ -473,11 +472,12 @@ To test and improve the performance of HEVM, we use a benchmark repository [1] d
 HEVM has a number of inherent limitations:
 
 \begin{itemize}
-\item Loops are challenging. The option \texttt{--max-iterations N} raises the iteration limit until which loops are examined.
+\item Loops are challenging. We have an iteration limit until which loops are examined
 \item Recursion, and parametric calls can cause HEVM to only partially explore the state
 \item Complicated mathematical expressions (e.g. division, modulo) can cause a challenge
-\item HEVM itself is not verified, and neither are the SMT solvers. Some SMT solvers will in be able to emit a proof, though
+\item HEVM is not verified, and neither are SMT solvers. Future: SMT solvers will emit a proof
 \end{itemize}
+\vspace{2ex}
 
 Future work:
 \begin{itemize}
