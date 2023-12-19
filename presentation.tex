@@ -17,18 +17,17 @@
     \titlepage 
 \end{frame}
 
-\begin{frame}{A bit about myself}
-\begin{itemize}
-\item PhD from INRIA Grenoble, France, wrote CryptoMiniSat, a SAT solver with the theory of Gauss-Jordan elimination
-\item Worked in IT Security industry for 10+ years
-\item Research at Kuldeep Meel's group for the past 5 years, mostly on counting and sampling
-\item Working at Ethereum Foundation for the past 2 years
-\end{itemize}
-\bigskip
-
-A lot of what I did were rewrite systems: preprocessors, inprocessors, etc. HEVM is in large part, a rewrite system
-
-\end{frame}
+%\begin{frame}{A bit about myself}
+%\begin{itemize}
+%\item PhD from INRIA Grenoble, France, wrote CryptoMiniSat, a SAT solver with the theory of Gauss-Jordan elimination
+%\item Worked in IT Security industry for 10+ years
+%\item Research at Kuldeep Meel's group for the past 5 years, mostly on counting and sampling
+%\item Working at Ethereum Foundation for the past 2 years
+%\end{itemize}
+%\bigskip
+%
+%A lot of what I did were rewrite systems: preprocessors, inprocessors, etc. HEVM is in large part, a rewrite system
+%\end{frame}
 
 % Outline frame
 \begin{frame}{Outline}
@@ -310,7 +309,7 @@ It's very expensive to accurately represent Keccak in SMT. Hence, we represent K
 \item We know the concrete value of the input $\rightarrow$ we add the axiom $keccak(input)=output$
 \item Size of value hash differs $\rightarrow$ hash differs. We assert this for all pairs
 \item Assert all pairs of keccak to be unequal if they don't match over \emph{partial} concrete values
-\item Keccak value is never very small
+\item $keccak(x) > 128$. Small slot values are used for non-map/array elements of contracts
 \end{itemize}
 \end{frame}
 
