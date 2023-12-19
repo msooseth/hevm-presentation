@@ -47,7 +47,7 @@ A lot of what I did were rewrite systems: preprocessors, inprocessors, etc. HEVM
    
    As part of the tests, there are usually:
    \begin{enumerate}
-   \item API specification that decribes what should happen, checked by 
+   \item API specification that describes what should happen, checked by 
    \textbf{positive tests}
    \item Bad outcomes that should not happen, usually checked by  \textbf{negative tests}
    \item A set of known bad states that should never be entered, checked by \textbf{invariant tests}
@@ -74,7 +74,7 @@ Ethereum is the second largest cryptocurrency in terms of value. Ethereum has:
 \item ACID execution semantics
 \item EVM-specific programming language, Solidity and its IR, YUL
 \item Proof-of-stake as its consensus layer
-\item Soon a data availability layer ("proto-danksharding") for rollups
+\item Soon a data availability layer ("proto-danksharding") for roll-ups
 \end{itemize}
 
 Downsides:
@@ -138,7 +138,7 @@ add %ax $5      ax: v1+5 bx: v2
 \end{minipage}
 \bigskip
 
-For sybolic execution, we end up having to follow two executions. This can become exponential.
+For symbolic execution, we end up having to follow two executions. This can become exponential.
 
 \end{frame}
 
@@ -247,7 +247,7 @@ HEVM's symbolic executor is very powerful:
 \begin{itemize}
 \item Operates on \emph{bytecode} so runs everything every deployed to the chain
 \item Understands all of the EVM: stack, call frames, memory, storage, calldata
-\item Can be set up to run at any point in time (blockhain history), through RPC
+\item Can be set up to run at any point in time (blockchain history), through RPC
 \item Can chain any number of symbolic transactions
 \item Fuzzed against concrete execution (geth)
 \end{itemize}
@@ -255,9 +255,9 @@ HEVM's symbolic executor is very powerful:
 
 Limitations:
 \begin{itemize}
-\item Cannot deal with symolic gas other than ignoring it
+\item Cannot deal with symbolic gas other than ignoring it
 \item Symbolic offset/size memory copy is not yet implemented
-\item Because it runs on bytecode, it needs to recover variable bitwidths, loops, etc.
+\item Because it runs on bytecode, it needs to recover variable bit-widths, loops, etc.
 \end{itemize}
 \end{frame}
 
@@ -292,7 +292,7 @@ AbstractBuf "a" // empty buffer
 WriteWord (Lit 1) (Var "a") (AbstractBuf "a") //1st write
 WriteWord (Lit 2) (Var "b") (WriteWord (Lit 1) (Var "a") (AbstractBuf "a")) //2nd
 \end{Verbatim}
-This can later be collapsed, e.g. in case the variables are concretized. We understand \texttt{(AbstractBuf "var")} and \texttt{(ConcreteBuf "value")}
+This can later be collapsed, e.g. in case the variables are concertized. We understand \texttt{(AbstractBuf "var")} and \texttt{(ConcreteBuf "value")}
 \bigskip
 
 While this can be inefficient, it allows us perform symbolic execution as fast as possible, only prepending an operation for each instruction. We can (and do) later collapse \& simplify these writes.
@@ -333,7 +333,7 @@ Notice that the SMT solver can use our Keccak rules to do this, too, but it's a 
 We do all the following rewrites to fixedpoint:
 \begin{itemize}
 \item Canonicalization of all commutative operators (concrete value first)
-\item Canocicalization of all less-than/greater-than/etc operators
+\item Canonicalization of all less-than/greater-than/etc operators
 \item Canonicalization of all Keccak expressions to match Solidity patterns
 \item Stripping writes when they are not read
 \item Stripping reads when they are not used
@@ -363,7 +363,7 @@ Haskell supports algebraic data types (ADTs), so our intermediate representation
 \begin{itemize}
 \item Finding counterexamples with SMT solvers
 \item Constant extraction: helping other fuzzers with "magic numbers"
-\item Subsitute constants and fold: we can build a fuzzer
+\item Substitute constants and fold: we can build a fuzzer
 \item Not just failing branches: automated test-case generation
 \end{itemize}
 
@@ -379,7 +379,7 @@ Fuzzing sounds strange given that HEVM is a symbolic execution engine. However:
 \end{itemize}
 \bigskip
 
-Notice that geth, the normal EVM concrete executor is incredibly slow. Hence a transpiled IR could achive serious speedup.
+Notice that geth, the normal EVM concrete executor is incredibly slow. Hence a transpiled IR could achieve serious speedup.
 
 \end{frame}
 
