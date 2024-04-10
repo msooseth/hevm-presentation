@@ -8,7 +8,7 @@
 
 \title{HEVM, a Smart Contract Verification Tool} 
 \author{Mate Soos, Ethereum Foundation}
-\date{12th of December 2023}
+\date{10th of April 2024}
 %\logo{sdfsdaf}
 
 
@@ -68,18 +68,18 @@ Symbolic execution can help with finding ways to trigger \emph{all} negative tes
 \begin{frame}{A Quick Recap of Ethereum}
 Ethereum is the second largest cryptocurrency in terms of value. Ethereum has:
 \begin{itemize}
-\item Stack-based VM, the EVM. Most popular executor of EVM: geth
-\item Contracts with code and storage
-\item ACID execution semantics
-\item EVM-specific programming language, Solidity and its IR, YUL
-\item Proof-of-stake as its consensus layer
-\item Soon a data availability layer ("proto-danksharding") for roll-ups
+\item Stack-based VM, the EVM. Most popular executor of EVM: \textbf{geth}
+\item Contracts with \textbf{code and storage}, unlike e.g. BitCoin
+\item ACID execution semantics, like a \textbf{database}
+\item EVM-specific programming language, \textbf{Solidity} and its IR, YUL
+\item Proof-of-stake as its \textbf{consensus layer} -- ordering transactions
+\item Soon a \textbf{data availability layer} ("proto-danksharding") for roll-ups
 \end{itemize}
 
 Downsides:
 \begin{itemize}
 \item Code and data are not clearly separated ("EOF" will solve)
-\item JUMP destinations are known but dynamic jumps are possible
+\item JUMP destinations are known,but dynamic jumps are possible
 \item All EVM instructions operate on 256b values
 \end{itemize}
 
@@ -149,7 +149,7 @@ For symbolic execution, we end up having to follow two executions. This can beco
 \item Takes as input negative/invariant test or suspected-equivalent code
 \item Examines \emph{all}\footnote{loops/recursion is an issue, we have a loop/depth limit} execution paths from the starting state
 \item Finds the set of requirements to reach all failing paths (i.e. \texttt{assert}-s)
-\item Runs internal fuzzer or external SMT solver to find input to reach them
+\item Runs external SMT solver to find input to reach them
 \item Displays call needed to trigger the bad state/invalidate the invariant
 \end{itemize}
 \end{frame}
@@ -244,7 +244,7 @@ HEVM can give you the exact \textbf{call to trigger the discrepancy} between the
 \begin{frame}{HEVM's Symbolic Executor}
 HEVM's symbolic executor is very powerful:
 \begin{itemize}
-\item Operates on \emph{bytecode} so runs everything every deployed to the chain
+\item Operates on \emph{bytecode} so runs everything deployed to the chain
 \item Understands all of the EVM: stack, call frames, memory, storage, calldata
 \item Can be set up to run at any point in time (blockchain history), through RPC
 \item Can chain any number of symbolic transactions
@@ -368,19 +368,19 @@ Haskell supports algebraic data types (ADTs), so our intermediate representation
 
 \end{frame}
 
-\begin{frame}[fragile=singleslide]{Solving the IR: Creating a Fuzzer}
-
-Fuzzing sounds strange given that HEVM is a symbolic execution engine. However:
-\begin{itemize}
-\item The IR is actually a very clean representation of the problem at hand
-\item Due to the extensive simplifications applied, it can contain specific constants that may be very hard to find otherwise
-\item IR \emph{could} be transpiled to assembly (potentially through \texttt{C}), and executed as a program
-\end{itemize}
-\bigskip
-
-Notice that geth, the normal EVM concrete executor is incredibly slow. Hence a transpiled IR could achieve serious speedup.
-
-\end{frame}
+%\begin{frame}[fragile=singleslide]{Solving the IR: Creating a Fuzzer}
+%
+%Fuzzing sounds strange given that HEVM is a symbolic execution engine. However:
+%\begin{itemize}
+%\item The IR is actually a very clean representation of the problem at hand
+%\item Due to the extensive simplifications applied, it can contain specific constants that may be very hard to find otherwise
+%\item IR \emph{could} be transpiled to assembly (potentially through \texttt{C}), and executed as a program
+%\end{itemize}
+%\bigskip
+%
+%Notice that geth, the normal EVM concrete executor is incredibly slow. Hence a transpiled IR could achieve serious speedup.
+%
+%\end{frame}
 
 \begin{frame}[fragile=singleslide]{Solving the IR: using an SMT Solver}
 The IR is translated in a straightforward manner to SMT. Let's say the expression is:
@@ -439,14 +439,14 @@ hevm test
 \end{frame}
 
 
-\begin{frame}[fragile=singleslide]{Results}
-\small
-To test and improve the performance of HEVM, we use a benchmark repository [1] developed in conjunction with the Halmos team [2], and soon we will have the K framework contributing as well.
-
-\includegraphics[scale=0.75]{boxchart}
-[1] \url{https://github.com/eth-sc-comp/benchmarks/}
-[2] \url{https://github.com/a16z/halmos}
-\end{frame}
+%\begin{frame}[fragile=singleslide]{Results}
+%\small
+%To test and improve the performance of HEVM, we use a benchmark repository [1] developed in conjunction with the Halmos team [2], and soon we will have the K framework contributing as well.
+%
+%\includegraphics[scale=0.75]{boxchart}
+%[1] \url{https://github.com/eth-sc-comp/benchmarks/}
+%[2] \url{https://github.com/a16z/halmos}
+%\end{frame}
 
 
 %\begin{frame}[fragile=singleslide]{Contributing Back to HEVM}
@@ -488,27 +488,27 @@ Future work:
 \end{itemize}
 \end{frame}
 
-\section{Conclusions}
-\begin{frame}[fragile=singleslide]{Conclusions}
-
-HEVM is a fully-featured, easy-to-use tool that can help find bugs in EVM bytecode. Its sophisticated IR is tailored to the EVM via Keccak- and array/map-specific rewrites to lower the complexity of solving the final SMT expression.
-\bigskip
-
-%Download HEVM from \url{https://github.com/ethereum/hevm/releases}
+%\section{Conclusions}
+%\begin{frame}[fragile=singleslide]{Conclusions}
+%
+%HEVM is a fully-featured, easy-to-use tool that can help find bugs in EVM bytecode. Its sophisticated IR is tailored to the EVM via Keccak- and array/map-specific rewrites to lower the complexity of solving the final SMT expression.
 %\bigskip
-%\qrcode{https://github.com/ethereum/hevm/releases}
-
-Development environment:
-\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
-sh <(curl -L https://nixos.org/nix/install) --daemon
-git clone https://github.com/ethereum/hevm/
-nix-shell
-cabal repl test
-[...]
-> :main
-\end{Verbatim}
-
-\end{frame}
+%
+%%Download HEVM from \url{https://github.com/ethereum/hevm/releases}
+%%\bigskip
+%%\qrcode{https://github.com/ethereum/hevm/releases}
+%
+%Development environment:
+%\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
+%sh <(curl -L https://nixos.org/nix/install) --daemon
+%git clone https://github.com/ethereum/hevm/
+%nix-shell
+%cabal repl test
+%[...]
+%> :main
+%\end{Verbatim}
+%
+%\end{frame}
 
 
 
