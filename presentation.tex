@@ -5,6 +5,21 @@
 \usepackage{qrcode}
 \usetheme{CambridgeUS}
 
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows}
+\tikzstyle{process} = [rectangle, minimum width=3cm, text centered, draw=black, fill=orange!30]
+\tikzstyle{decision} = [rectangle, minimum width=3cm, text centered, draw=black, fill=green!30]
+\tikzstyle{code} = [rectangle, minimum width=3cm, text centered, draw=black, fill=yellow!20]
+\tikzstyle{arrow} = [thick,->,>=stealth]
+\tikzstyle{arrow2} = [thick, dashed, ->,>=stealth]
+\tikzstyle{arrow3} = [thick, ->, draw=blue]
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+
+
 
 \title{hevm, a Fast Symbolic Execution Framework for EVM Bytecode} 
 \author{dxo$^{1}$, \emph{Mate Soos$^{1}$}, Zoe Paraskevopoulou$^{1}$, Martin Lundfall$^{2}$, Mikael Brockman$^{2}$}
@@ -195,7 +210,7 @@ Fuzzing never finds this edge-case. Symbolic execution always finds it.
 \end{frame}
 
 
-\begin{frame}[fragile=singleslide]{Symbolic Execution: Equivalence Checking}
+\begin{frame}[fragile=singleslide]{hevm: Symbolic Execution for Equivalence Checking}
 You can ask hevm to check whether two implementations are equivalent
 \bigskip
 \\
@@ -246,6 +261,98 @@ Limitations:
 \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]{Intermediate Representation}
+\begin{tikzpicture}[node distance=2cm]
+\centering
+\tiny
+%ITE node
+
+%the source code
+\node (program) [code]
+{\begin{lstlisting}[numbers=none]
+contract MyContract {
+  mapping(uint => uint) items;
+  function test(uint val1) public {
+    require(val1 > 10);
+    unchecked {
+      items[4] = val1+1;
+      assert(items[4] > 10); } } }
+\end{lstlisting}};
+
+\node (dec1) [decision, right of=program, xshift=7cm]
+%\node[draw, align=left] at (6,7)
+{\begin{lstlisting}[language=haskell,numbers=none]
+(ITE (IsZero TxValue)) ...
+\end{lstlisting}};
+
+% left of that:
+%\node[draw, align=left] at (0,6)
+\node (pro1) [process, below of=program, yshift=0.3cm]
+{\begin{lstlisting}[language=haskell,numbers=none]
+(Failure Error: Revert)
+  Assertions:
+    (PEq (IsZero TxValue) 0 )
+    (PLT (BufLength (AbstractBuf "txdata")) 18446744073709551616 )
+\end{lstlisting}};
+
+% ITE node after:
+%\node[draw, align=left] at (6,6)
+\node (dec2) [decision, below of=dec1, yshift=0.5cm]
+{\begin{lstlisting}[numbers=none]
+ITE (LT 10 (Var "arg1")) ...
+\end{lstlisting}};
+
+% left of that:
+%\node[draw, align=left] at (0,4)
+\node (pro2) [process, below of=pro1, yshift=0.5cm]
+{\begin{lstlisting}[numbers=none]
+(Failure Error: Revert [..])
+  Assertions:
+    (PEq (LT 10 (Var "arg1")) 0 )
+    (PEq TxValue 0 )
+    (PLT (BufLength (AbstractBuf "txdata")) 18446744073709551616 )
+\end{lstlisting}};
+
+% ITE node after:
+%\node[draw, align=left] at (6,4)
+\node (dec3) [decision, below of=dec2, yshift=0.5cm]
+{\begin{lstlisting}[language=haskell,numbers=none]
+ITE (LT (Add 1 (Var "arg1")) 10)...
+\end{lstlisting}};
+
+%left of that:
+%\node[draw] at (0,2)
+\node (pro3) [process, below of=pro2, yshift=0.5cm]
+{\begin{lstlisting}[language=haskell,numbers=none]
+(Failure Error: Revert [...])
+  Assertions:
+    ....
+\end{lstlisting}};
+
+%right of that:
+%\node[draw] at (8,2)v
+\node (pro4) [process, below of=dec3, yshift=0.5cm]
+{\begin{lstlisting}[language=haskell,numbers=none]
+(Success [...])
+  Assertions:
+    (PEq 37470[...] (Keccak (ConcreteBuf [...])))
+    (PLT (Add 1 (Var "arg1")) 10 )
+    (PLT 10 (Var "arg1"))
+    (PEq TxValue 0)
+    (PLT (BufLength (AbstractBuf "txdata")) 18446744073709551616)
+\end{lstlisting}};
+
+\draw [arrow3] (program) --node[anchor=south] {\tiny Symb. Interp.} (dec1);
+\draw [arrow2] (dec1) --node[anchor=north]{False}  (pro1);
+\draw [arrow]  (dec1) --node[anchor=west]{True}   (dec2);
+\draw [arrow2] (dec2) --node[anchor=north]{False}  (pro2);
+\draw [arrow]  (dec2) --node[anchor=west]{True}   (dec3);
+\draw [arrow2] (dec3) --node[anchor=north]{False}  (pro3);
+\draw [arrow]  (dec3) --node[anchor=north]{True}   (pro4);
+
+    \end{tikzpicture}
+
+\end{frame}
 
 \begin{frame}[fragile=singleslide]{Intermediate Representation}
 \small
