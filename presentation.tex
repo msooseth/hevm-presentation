@@ -523,33 +523,33 @@ We do all the following rewrites to fixedpoint:
 %\end{Verbatim}
 %\end{frame}
 
-\begin{frame}[fragile=singleslide]{Using hevm}
-
-Install foundry [1]. Get static hevm binary [2]. Install z3 [3]. Add foundry test cases, and prepend with \texttt{``prove\_''} the ones you want hevm to use:
-
-\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
-function prove_add(uint x, uint y) public pure {
-    unchecked { if (x + y < x) return; }
-    assert(x + y >= x);
-}
-\end{Verbatim}
-
-Then run with:
-
-\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
-forge build
-hevm test
-\end{Verbatim}
-
-
-\bigskip
-
-[1] \url{https://github.com/foundry-rs/foundry}
-
-[2] \url{https://github.com/ethereum/hevm/releases}
-
-[3] \url{https://github.com/Z3Prover/z3}
-\end{frame}
+%\begin{frame}[fragile=singleslide]{Using hevm}
+%
+%Install foundry [1]. Get static hevm binary [2]. Install z3 [3]. Add foundry test cases, and prepend with \texttt{``prove\_''} the ones you want hevm to use:
+%
+%\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
+%function prove_add(uint x, uint y) public pure {
+%    unchecked { if (x + y < x) return; }
+%    assert(x + y >= x);
+%}
+%\end{Verbatim}
+%
+%Then run with:
+%
+%\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
+%forge build
+%hevm test
+%\end{Verbatim}
+%
+%
+%\bigskip
+%
+%[1] \url{https://github.com/foundry-rs/foundry}
+%
+%[2] \url{https://github.com/ethereum/hevm/releases}
+%
+%[3] \url{https://github.com/Z3Prover/z3}
+%\end{frame}
 
 
 %\begin{frame}[fragile=singleslide]{Results}
@@ -581,6 +581,21 @@ hevm test
 %\end{Verbatim}
 %\end{frame}
 
+\section{Results}
+
+\begin{frame}[fragile=singleslide]{Results}
+
+We ran latest hevm, halmos, and kontrol (KEVM) on the Eth-SC Ethereum benchmarks [1], on an AMD 5950x with 5min timeout,  and 128GB of RAM.
+{
+\begin{center}
+\includegraphics{cdf}
+\end{center}
+}
+
+[1] \qrcode[height=0.7cm]{https://github.com/eth-sc-comp/benchmarks/}\qquad  \url{https://github.com/eth-sc-comp/benchmarks/}
+\end{frame}
+
+
 \section{Conclusions}
 
 \begin{frame}[fragile=singleslide]{Limitations \& Future Work}
@@ -601,6 +616,12 @@ Future work:
 \item Time-limited, early-abort SMT solving and fuzzing
 \item Some pre-written invariants and negative tests, moving towards static analysis
 \end{itemize}
+
+\bigskip
+
+\quad  \qrcode[height=1cm]{https://github.com/ethereum/hevm/releases}
+\qquad \url{https://github.com/ethereum/hevm/releases}
+
 \end{frame}
 
 %\section{Conclusions}
