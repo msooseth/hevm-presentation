@@ -6,9 +6,9 @@
 \usetheme{CambridgeUS}
 
 
-\title{HEVM, a Smart Contract Verification Tool} 
-\author{Mate Soos, Ethereum Foundation}
-\date{10th of April 2024}
+\title{hevm, a Fast Symbolic Execution Framework for EVM Bytecode} 
+\author{dxo$^{1}$, \emph{Mate Soos$^{1}$}, Zoe Paraskevopoulou$^{1}$, Martin Lundfall$^{2}$, Mikael Brockman$^{2}$}
+\date{26th of July 2024, Montreal, Canada}
 %\logo{sdfsdaf}
 
 
@@ -26,7 +26,7 @@
 %\end{itemize}
 %\bigskip
 %
-%A lot of what I did were rewrite systems: preprocessors, inprocessors, etc. HEVM is in large part, a rewrite system
+%A lot of what I did were rewrite systems: preprocessors, inprocessors, etc. hevm is in large part, a rewrite system
 %\end{frame}
 
 % Outline frame
@@ -37,112 +37,86 @@
 
 % Lists frame
 
-\section{A Recap: Testing, the Ethereum Blockchain, and Symbolic Execution}
-\begin{frame}{A Quick Recap of Testing}
-
-\begin{columns}
-\begin{column}{0.7\textwidth}
-   Testing is a discipline. Reliable systems usually have a \textbf{testing strategy} encompassing at least parts of the test pyramid.
-   
-   As part of the tests, there are usually:
-   \begin{enumerate}
-   \item API specification that describes what should happen, checked by 
-   \textbf{positive tests}
-   \item Bad outcomes that should not happen, usually checked by  \textbf{negative tests}
-   \item A set of known bad states that should never be entered, checked by \textbf{invariant tests}
-   \end{enumerate} 
-\end{column}
-\begin{column}{0.3\textwidth}  %%<--- here
-    \begin{center}
-     \includegraphics[scale=0.45]{triangle3.png}
-     \end{center}
-\end{column}
-\end{columns}
-\bigskip
-
-
-Symbolic execution can help with finding ways to trigger \emph{all} negative tests and validate that invariants \emph{always} hold.
-
-\end{frame}
+\section{A Quick Recap of Ethereum}
 
 \begin{frame}{A Quick Recap of Ethereum}
 Ethereum is the second largest cryptocurrency in terms of value. Ethereum has:
 \begin{itemize}
 \item Stack-based VM, the EVM. Most popular executor of EVM: \textbf{geth}
-\item Contracts with \textbf{code and storage}, unlike e.g. BitCoin
+\item Contracts with \textbf{code and storage}, unlike e.g. Bitcoin
 \item ACID execution semantics, like a \textbf{database}
 \item EVM-specific programming language, \textbf{Solidity} and its IR, YUL
 \item Proof-of-stake as its \textbf{consensus layer} -- ordering transactions
-\item Soon a \textbf{data availability layer} ("proto-danksharding") for roll-ups
 \end{itemize}
 
 Downsides:
 \begin{itemize}
 \item Code and data are not clearly separated ("EOF" will solve)
-\item JUMP destinations are known,but dynamic jumps are possible
+\item JUMP destinations are known, but dynamic jumps are possible
 \item All EVM instructions operate on 256b values
 \end{itemize}
 
 \end{frame}
 
+%
+%\begin{frame}[fragile=singleslide]{Symbolic Execution -- straight line program}
+%
+%Most execution works by running instructions concretely:
+%\begin{verbatim}
+%---             ax: 1   , bx: 2
+%mov %bx %ax     ax: 2   , bx: 2
+%add %ax $4      ax: 6   , bx: 2
+%\end{verbatim}
+%\bigskip
+%
+%Symbolic execution, with symbolic state:
+%\begin{verbatim}
+%---             ax: v1  , bx: v2
+%mov %bx %ax     ax: v2  , bx: v2
+%add %ax $4      ax: v2+4, bx: v2
+%\end{verbatim}
+%\end{frame}
+%
+%\begin{frame}[fragile=singleslide]{Symbolic Execution -- branching}
+%\begin{minipage}[t]{0.45\textwidth}
+%Concrete execution:
+%\begin{Verbatim}[fontsize=\small]
+%-----------     ax: 1    bx: 1
+%cmp %ax %bx     ax: 1    bx: 1
+%je .if_true     
+%; false
+%add %ax $4
+%jmp short .end
+%.if_true:
+%add %ax $5      ax: 6    bx: 1
+%.end:
+%\end{Verbatim}
+%\end{minipage}%
+%\begin{minipage}[t]{0.45\textwidth}
+%Symbolic execution, with symbolic state:
+%\begin{Verbatim}[fontsize=\small]
+%-----------     ax: v1   bx: v2
+%cmp %ax %bx     
+%je .if_true     
+%; false
+%add %ax $4      ax: v1+4 bx: v2
+%jmp short .end
+%.if_true:
+%add %ax $5      ax: v1+5 bx: v2
+%.end:
+%---- v1==v2 ->  ax: v1+5 bx: v2
+%---- v1!=v2 ->  ax: v1+4 bx: v2
+%\end{Verbatim}
+%\end{minipage}
+%\bigskip
 
-\begin{frame}[fragile=singleslide]{Symbolic Execution -- straight line program}
+%For symbolic execution, we end up having to follow two executions. This can become exponential.
+%
+%\end{frame}
 
-Most execution works by running instructions concretely:
-\begin{verbatim}
----             ax: 1   , bx: 2
-mov %bx %ax     ax: 2   , bx: 2
-add %ax $4      ax: 6   , bx: 2
-\end{verbatim}
-\bigskip
+\section{hevm: An Overview}
 
-Symbolic execution, with symbolic state:
-\begin{verbatim}
----             ax: v1  , bx: v2
-mov %bx %ax     ax: v2  , bx: v2
-add %ax $4      ax: v2+4, bx: v2
-\end{verbatim}
-\end{frame}
-
-\begin{frame}[fragile=singleslide]{Symbolic Execution -- branching}
-\begin{minipage}[t]{0.45\textwidth}
-Concrete execution:
-\begin{Verbatim}[fontsize=\small]
------------     ax: 1    bx: 1
-cmp %ax %bx     ax: 1    bx: 1
-je .if_true     
-; false
-add %ax $4
-jmp short .end
-.if_true:
-add %ax $5      ax: 6    bx: 1
-.end:
-\end{Verbatim}
-\end{minipage}%
-\begin{minipage}[t]{0.45\textwidth}
-Symbolic execution, with symbolic state:
-\begin{Verbatim}[fontsize=\small]
------------     ax: v1   bx: v2
-cmp %ax %bx     
-je .if_true     
-; false
-add %ax $4      ax: v1+4 bx: v2
-jmp short .end
-.if_true:
-add %ax $5      ax: v1+5 bx: v2
-.end:
----- v1==v2 ->  ax: v1+5 bx: v2
----- v1!=v2 ->  ax: v1+4 bx: v2
-\end{Verbatim}
-\end{minipage}
-\bigskip
-
-For symbolic execution, we end up having to follow two executions. This can become exponential.
-
-\end{frame}
-
-\section{HEVM: An Overview}
-\begin{frame}{HEVM}
+\begin{frame}{hevm}
 \begin{itemize}
 \item Uses the Ethereum Virtual Machine (EVM) for execution
 \item Can do both concrete and symbolic execution
@@ -153,6 +127,8 @@ For symbolic execution, we end up having to follow two executions. This can beco
 \item Displays call needed to trigger the bad state/invalidate the invariant
 \end{itemize}
 \end{frame}
+
+
 
 %\begin{frame}[fragile=singleslide]{Symbolic Execution: example}
 %Say your code looks like this:
@@ -165,11 +141,15 @@ For symbolic execution, we end up having to follow two executions. This can beco
 %\end{Verbatim}
 %
 %
-%HEVM can find the case where $a=0xffffff\ldots$ to trigger the assert due to roll-around. HEVM gives you the \textbf{exact call to reproduce the bug}. This way of using HEVM can find a \emph{known-bad state}.
+%hevm can find the case where $a=0xffffff\ldots$ to trigger the assert due to roll-around. hevm gives you the \textbf{exact call to reproduce the bug}. This way of using hevm can find a \emph{known-bad state}.
 %
 %\end{frame}
 
-\begin{frame}[fragile=singleslide]{Symbolic Execution: Negative Tests}
+\begin{frame}{hevm: Symbolic Execution for Counterexample Generation}
+\includegraphics[scale=0.4]{pipeline}
+\end{frame}
+
+\begin{frame}[fragile=singleslide]{hevm: Symbolic Execution for Counterexample Generation}
 Say your code looks like this:
 
 \begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
@@ -191,26 +171,30 @@ Fuzzing never finds this edge-case. Symbolic execution always finds it.
 
 \end{frame}
 
-\begin{frame}[fragile=singleslide]{Symbolic Execution: Invariant Checking}
-You can describe \textbf{invariants} of your contract and write them as functions Then assert these functions every time the invariant must hold.
-\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
-function my_invariant() private pure returns inv {
-	inv = ...calculate invariant...
-}
-	
-function transfer(uint a) public pure {
-	require(my_invariant());
-	... your function code here ....
-	assert(my_invariant());
-}
-\end{Verbatim}
+%\begin{frame}[fragile=singleslide]{Symbolic Execution: Invariant Checking}
+%You can describe \textbf{invariants} of your contract and write them as functions Then assert these functions every time the invariant must hold.
+%\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
+%function my_invariant() private pure returns inv {
+%	inv = ...calculate invariant...
+%}
+%	
+%function transfer(uint a) public pure {
+%	require(my_invariant());
+%	... your function code here ....
+%	assert(my_invariant());
+%}
+%\end{Verbatim}
+%
+%Here, instead of a known-bad state, we validate that we are always in state that matches our expectations.
+%\end{frame}	
 
-Here, instead of a known-bad state, we validate that we are always in state that matches our expectations.
-\end{frame}	
+\begin{frame}{hevm: Symbolic Execution for Equivalence Checking}
+\includegraphics[scale=0.4]{equivalence-pipeline}
+\end{frame}
 
 
 \begin{frame}[fragile=singleslide]{Symbolic Execution: Equivalence Checking}
-You can ask HEVM to check whether two implementations are equivalent
+You can ask hevm to check whether two implementations are equivalent
 \bigskip
 \\
 
@@ -231,18 +215,18 @@ function (...) public returns x {
 \end{Verbatim}
 \end{minipage}
 
-HEVM can give you the exact \textbf{call to trigger the discrepancy} between the two functions. This way, you can safely improve the gas performance of your code.
+hevm can give the exact \textbf{call to trigger the discrepancy} between the two functions. This way, you can safely improve the gas performance of your code.
 \end{frame}
 
-\section{HEVM: The Nitty-Gritty Details}
-\begin{frame}{How HEVM works}
+\section{hevm: The Nitty-Gritty Details}
+\begin{frame}{How hevm works}
 \centering
-\includegraphics[scale=0.6]{HEVM-overview}
+\includegraphics[scale=0.6]{hevm-overview}
 
 \end{frame}
 
-\begin{frame}{HEVM's Symbolic Executor}
-HEVM's symbolic executor is very powerful:
+\begin{frame}{hevm's Symbolic Executor}
+hevm's symbolic executor is very powerful:
 \begin{itemize}
 \item Operates on \emph{bytecode} so runs everything deployed to the chain
 \item Understands all of the EVM: stack, call frames, memory, storage, calldata
@@ -256,7 +240,7 @@ Limitations:
 \begin{itemize}
 \item Cannot deal with symbolic gas other than ignoring it
 \item Symbolic offset/size memory copy is not yet implemented
-\item Because it runs on bytecode, it needs to recover variable bit-widths, loops, etc.
+\item Loops and recursion are explored only to a fixed depth
 \end{itemize}
 \end{frame}
 
@@ -358,19 +342,19 @@ Haskell supports algebraic data types (ADTs), so our intermediate representation
 \end{Verbatim}
 \end{frame}
 
-\begin{frame}[fragile=singleslide]{What can we use the IR for?}
-\begin{itemize}
-\item Finding counterexamples with SMT solvers
-\item Constant extraction: helping other fuzzers with "magic numbers"
-\item Substitute constants and fold: we can build a fuzzer
-\item Not just failing branches: automated test-case generation
-\end{itemize}
-
-\end{frame}
+%\begin{frame}[fragile=singleslide]{What can we use the IR for?}
+%\begin{itemize}
+%\item Finding counterexamples with SMT solvers
+%\item Constant extraction: helping other fuzzers with "magic numbers"
+%\item Substitute constants and fold: we can build a fuzzer
+%\item Not just failing branches: automated test-case generation
+%\end{itemize}
+%
+%\end{frame}
 
 %\begin{frame}[fragile=singleslide]{Solving the IR: Creating a Fuzzer}
 %
-%Fuzzing sounds strange given that HEVM is a symbolic execution engine. However:
+%Fuzzing sounds strange given that hevm is a symbolic execution engine. However:
 %\begin{itemize}
 %\item The IR is actually a very clean representation of the problem at hand
 %\item Due to the extensive simplifications applied, it can contain specific constants that may be very hard to find otherwise
@@ -410,9 +394,9 @@ sat
 \end{Verbatim}
 \end{frame}
 
-\begin{frame}[fragile=singleslide]{Using HEVM}
+\begin{frame}[fragile=singleslide]{Using hevm}
 
-Install foundry [1]. Get static HEVM binary [2]. Install z3 [3]. Add foundry test cases, and prepend with \texttt{``prove\_''} the ones you want HEVM to use:
+Install foundry [1]. Get static hevm binary [2]. Install z3 [3]. Add foundry test cases, and prepend with \texttt{``prove\_''} the ones you want hevm to use:
 
 \begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
 function prove_add(uint x, uint y) public pure {
@@ -441,7 +425,7 @@ hevm test
 
 %\begin{frame}[fragile=singleslide]{Results}
 %\small
-%To test and improve the performance of HEVM, we use a benchmark repository [1] developed in conjunction with the Halmos team [2], and soon we will have the K framework contributing as well.
+%To test and improve the performance of hevm, we use a benchmark repository [1] developed in conjunction with the Halmos team [2], and soon we will have the K framework contributing as well.
 %
 %\includegraphics[scale=0.75]{boxchart}
 %[1] \url{https://github.com/eth-sc-comp/benchmarks/}
@@ -449,16 +433,16 @@ hevm test
 %\end{frame}
 
 
-%\begin{frame}[fragile=singleslide]{Contributing Back to HEVM}
+%\begin{frame}[fragile=singleslide]{Contributing Back to hevm}
 %
-%The HEVM repository uses \texttt{nix} for ease of development:
+%The hevm repository uses \texttt{nix} for ease of development:
 %
 %
 %
 %You now have a full development environment, with all necessary tools installed, including Z3.
 %\bigskip 
 %
-%HEVM is written in Haskell, but there are many areas that can be contributed to without deep knowledge of Haskell. For example, expression simplification:
+%hevm is written in Haskell, but there are many areas that can be contributed to without deep knowledge of Haskell. For example, expression simplification:
 %
 %\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
 %    go (Add a b)
@@ -469,13 +453,13 @@ hevm test
 %\end{frame}
 
 \begin{frame}[fragile=singleslide]{Limitations \& Future Work}
-HEVM has a number of inherent limitations:
+hevm has a number of inherent limitations:
 
 \begin{itemize}
 \item Loops are challenging. We have an iteration limit until which loops are examined
-\item Recursion, and parametric calls can cause HEVM to only partially explore the state
+\item Recursion, and parametric calls can cause hevm to only partially explore the state
 \item Complicated mathematical expressions (e.g. division, modulo) can cause a challenge
-\item HEVM is not verified, and neither are SMT solvers. Future: SMT solvers will emit a proof
+\item hevm is not verified, and neither are SMT solvers. Future: SMT solvers will emit a proof
 \end{itemize}
 \vspace{2ex}
 
@@ -491,10 +475,10 @@ Future work:
 %\section{Conclusions}
 %\begin{frame}[fragile=singleslide]{Conclusions}
 %
-%HEVM is a fully-featured, easy-to-use tool that can help find bugs in EVM bytecode. Its sophisticated IR is tailored to the EVM via Keccak- and array/map-specific rewrites to lower the complexity of solving the final SMT expression.
+%hevm is a fully-featured, easy-to-use tool that can help find bugs in EVM bytecode. Its sophisticated IR is tailored to the EVM via Keccak- and array/map-specific rewrites to lower the complexity of solving the final SMT expression.
 %\bigskip
 %
-%%Download HEVM from \url{https://github.com/ethereum/hevm/releases}
+%%Download hevm from \url{https://github.com/ethereum/hevm/releases}
 %%\bigskip
 %%\qrcode{https://github.com/ethereum/hevm/releases}
 %
