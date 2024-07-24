@@ -261,6 +261,29 @@ Limitations:
 \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile=singleslide]{Intermediate Representation}
+\small
+
+Through the symbolic execution engine we create an expression that captures all end-states. We then take each end-state out and filter it for things we are looking for, e.g. assertion failures. Let's take the example:
+
+
+\begin{Verbatim}[frame=single, framerule=0.2mm,framesep=2mm,fontsize=\small]
+function overflow(uint a) public pure {
+	uint b;
+	unchecked { b = a + 1;}
+	assert(b > a);
+}
+\end{Verbatim}
+
+The expression to generate a counterexamle for this could look like:
+
+\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
+PLEq (Add (Var "a") (Lit 1)) (Var "a")
+\end{Verbatim}
+
+Notice: we use less-or-equal, because we want a \textbf{counterexample}
+\end{frame}
+
 \begin{frame}[fragile]{Intermediate Representation}
 \begin{tikzpicture}[node distance=2cm]
 \centering
@@ -279,16 +302,16 @@ contract MyContract {
       assert(items[4] > 10); } } }
 \end{lstlisting}};
 
-\node (dec1) [decision, right of=program, xshift=7cm]
+\node (dec1) [decision, right of=program, xshift=6.5cm]
 %\node[draw, align=left] at (6,7)
-{\begin{lstlisting}[language=haskell,numbers=none]
+{\begin{lstlisting}[numbers=none]
 (ITE (IsZero TxValue)) ...
 \end{lstlisting}};
 
 % left of that:
 %\node[draw, align=left] at (0,6)
 \node (pro1) [process, below of=program, yshift=0.3cm]
-{\begin{lstlisting}[language=haskell,numbers=none]
+{\begin{lstlisting}[numbers=none]
 (Failure Error: Revert)
   Assertions:
     (PEq (IsZero TxValue) 0 )
@@ -316,14 +339,14 @@ ITE (LT 10 (Var "arg1")) ...
 % ITE node after:
 %\node[draw, align=left] at (6,4)
 \node (dec3) [decision, below of=dec2, yshift=0.5cm]
-{\begin{lstlisting}[language=haskell,numbers=none]
+{\begin{lstlisting}[numbers=none]
 ITE (LT (Add 1 (Var "arg1")) 10)...
 \end{lstlisting}};
 
 %left of that:
 %\node[draw] at (0,2)
 \node (pro3) [process, below of=pro2, yshift=0.5cm]
-{\begin{lstlisting}[language=haskell,numbers=none]
+{\begin{lstlisting}[numbers=none]
 (Failure Error: Revert [...])
   Assertions:
     ....
@@ -331,8 +354,8 @@ ITE (LT (Add 1 (Var "arg1")) 10)...
 
 %right of that:
 %\node[draw] at (8,2)v
-\node (pro4) [process, below of=dec3, yshift=0.5cm]
-{\begin{lstlisting}[language=haskell,numbers=none]
+\node (pro4) [process, below of=dec3, yshift=0.3cm]
+{\begin{lstlisting}[numbers=none]
 (Success [...])
   Assertions:
     (PEq 37470[...] (Keccak (ConcreteBuf [...])))
@@ -342,40 +365,19 @@ ITE (LT (Add 1 (Var "arg1")) 10)...
     (PLT (BufLength (AbstractBuf "txdata")) 18446744073709551616)
 \end{lstlisting}};
 
-\draw [arrow3] (program) --node[anchor=south] {\tiny Symb. Interp.} (dec1);
+\draw [arrow3] (program) --node[anchor=south] {\tiny Symbolic Interpretation} (dec1);
 \draw [arrow2] (dec1) --node[anchor=north]{False}  (pro1);
 \draw [arrow]  (dec1) --node[anchor=west]{True}   (dec2);
 \draw [arrow2] (dec2) --node[anchor=north]{False}  (pro2);
 \draw [arrow]  (dec2) --node[anchor=west]{True}   (dec3);
-\draw [arrow2] (dec3) --node[anchor=north]{False}  (pro3);
-\draw [arrow]  (dec3) --node[anchor=north]{True}   (pro4);
+\draw [arrow2] (dec3) --node[anchor=south]{}  (pro3);
+\draw [arrow]  (dec3) --node[anchor=north]{}   (pro4);
 
     \end{tikzpicture}
 
 \end{frame}
 
-\begin{frame}[fragile=singleslide]{Intermediate Representation}
-\small
 
-Through the symbolic execution engine we create an expression that captures all end-states. We then take each end-state out and filter it for things we are looking for, e.g. assertion failures. Let's take the example:
-
-
-\begin{Verbatim}[frame=single, framerule=0.2mm,framesep=2mm,fontsize=\small]
-function overflow(uint a) public pure {
-	uint b;
-	unchecked { b = a + 1;}
-	assert(b > a);
-}
-\end{Verbatim}
-
-The expression to generate a counterexamle for this could look like:
-
-\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
-PLEq (Add (Var "a") (Lit 1)) (Var "a")
-\end{Verbatim}
-
-Notice: we use less-or-equal, because we want a \textbf{counterexample}
-\end{frame}
 
 \begin{frame}[fragile=singleslide]{Intermediate Representation: Writes}
 Writing in a buffer is represented as a chain of writes:
