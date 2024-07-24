@@ -438,20 +438,20 @@ We do all the following rewrites to fixedpoint:
 \end{itemize}
 \end{frame}
 
-\begin{frame}[fragile=singleslide]{Intermediate Representation: Haskell to the Rescue}
-
-Haskell supports algebraic data types (ADTs), so our intermediate representation (IR) can be fully typed. Furthermore, Haskell supports pattern matching, so our rewrite rules are easy to read \& write:
-\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
-    -- syntactic Eq reduction
-    go (Eq (Lit a) (Lit b))
-      | a == b = Lit 1
-      | otherwise = Lit 0
-    go (Eq (Lit 0) (Sub a b)) = eq a b
-    go (Eq a b)
-      | a == b = Lit 1
-      | otherwise = eq a b
-\end{Verbatim}
-\end{frame}
+%\begin{frame}[fragile=singleslide]{Intermediate Representation: Haskell to the Rescue}
+%
+%Haskell supports algebraic data types (ADTs), so our intermediate representation (IR) can be fully typed. Furthermore, Haskell supports pattern matching, so our rewrite rules are easy to read \& write:
+%\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
+%    -- syntactic Eq reduction
+%    go (Eq (Lit a) (Lit b))
+%      | a == b = Lit 1
+%      | otherwise = Lit 0
+%    go (Eq (Lit 0) (Sub a b)) = eq a b
+%    go (Eq a b)
+%      | a == b = Lit 1
+%      | otherwise = eq a b
+%\end{Verbatim}
+%\end{frame}
 
 %\begin{frame}[fragile=singleslide]{What can we use the IR for?}
 %\begin{itemize}
