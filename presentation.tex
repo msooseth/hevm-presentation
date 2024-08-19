@@ -24,7 +24,7 @@
 \title[hevm]{hevm, a Fast Symbolic Execution Framework for EVM Bytecode} 
 \author[dxo, Soos, Paraskevopoulou, Lundfall, Brockmann]{dxo$^{1}$, \emph{Mate Soos$^{1}$}, Zoe Paraskevopoulou$^{1}$, Martin Lundfall$^{2}$, Mikael Brockman$^{2}$}
 \institute[]{$^{1}$ Ethereum Foundation, $^{2}$ Independent Researcher}
-\date{26th of July 2024, Montreal, Canada}
+%\date{26th of July 2024, Montreal, Canada}
 %\logo{sdfsdaf}
 
 
@@ -139,8 +139,10 @@ jmp short .end
 .if_true:
 add %ax $5      ax: v1+5 bx: v2
 .end:
----- v1==v2 ->  ax: v1+5 bx: v2
----- v1!=v2 ->  ax: v1+4 bx: v2
+\end{Verbatim}
+\begin{Verbatim}[fontsize=\small]
+-**- v1==v2 ->  ax: v1+5 bx: v2
+-**- v1!=v2 ->  ax: v1+4 bx: v2
 \end{Verbatim}
 \end{minipage}
 \bigskip
@@ -159,7 +161,7 @@ Purely symbolic execution-based systems:
 \begin{itemize}
 \item \textbf{Certora Prover}: Based on backwards exploration and weakest precondition computation
 \item \textbf{EthBMC}: Bounded model checking-based exploration of contracts
-\item \textbf{halmos}: written in python, with its own IR and internal rewrite engine
+\item \textbf{halmos}: Written in python, with its own IR and internal rewrite engine
 \item \textbf{KEVM}: K-framework based, allows to ``break out'' into K to prove lemmas
 \end{itemize}
 \end{frame}
@@ -263,9 +265,9 @@ hevm's symbolic executor is very powerful:
 
 Limitations:
 \begin{itemize}
-\item Cannot deal with symbolic gas other than ignoring it
-\item Symbolic offset/size memory copy is not yet implemented
-\item Loops and recursion are explored only to a fixed depth
+\item Cannot deal with \textbf{symbolic gas} other than ignoring it
+\item \textbf{Symbolic offset/size memcopy} is not yet implemented
+\item \textbf{Loops and recursion} are explored only to a fixed depth
 \end{itemize}
 \end{frame}
 
@@ -423,20 +425,20 @@ It's very expensive to accurately represent Keccak in SMT. Hence, we represent K
 \end{itemize}
 \end{frame}
 %
-%\begin{frame}[fragile=singleslide]{Intermediate Representation: Maps}
-%Storage of contracts is an unstructured array of uint256. Solidity uses: $keccak (bytes32(key) || bytes32(id))$ to map $mymap[key]$ where $id$ is the map index:
-%
-%\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
-%contract C {
-%    mapping(uint => uint) mymap_id0;
-%    mapping(uint => uint) mymap_id1;
-%}
-%\end{Verbatim}
-%We have Solidity-specific rewrite rules to strip writes. So when writing two $keccak (bytes32(key) || bytes32(id))$-s on top of each other, and then reading, we traverse the list of writes to pick out the potentially matching one(s).
-%\bigskip
-%
-%Notice that the SMT solver can use our Keccak rules to do this, too, but it's a lot slower
-%\end{frame}
+\begin{frame}[fragile=singleslide]{Intermediate Representation: Maps}
+Storage of contracts is an unstructured array of uint256. Solidity uses: $keccak (bytes32(key) || bytes32(id))$ to map $mymap[key]$ where $id$ is the map index:
+
+\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
+contract C {
+    mapping(uint => uint) map_id_0;
+    mapping(uint => uint) map_id_1;
+}
+\end{Verbatim}
+We have Solidity-specific rewrite rules to strip writes. So when writing two $keccak (bytes32(key) || bytes32(id))$-s on top of each other, and then reading, we traverse the list of writes to pick out the potentially matching one(s).
+\bigskip
+
+Notice that the SMT solver can use our Keccak rules to do this, too, but it's a lot slower
+\end{frame}
 
 \begin{frame}[fragile=singleslide]{Intermediate Representation: Simplification} 
 We do all the following rewrites to fixedpoint:
