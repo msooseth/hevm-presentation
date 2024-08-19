@@ -50,9 +50,6 @@
     \tableofcontents
 \end{frame}
 
-
-% Lists frame
-
 \section{Recap of Ethereum \& Related Work}
 
 \begin{frame}{A Quick Recap of Ethereum}
@@ -95,9 +92,66 @@ Fuzzing never finds this edge-case. Symbolic execution always finds it.
 
 \end{frame}
 
+
+
+\begin{frame}[fragile=singleslide]{Symbolic Execution -- straight line program}
+
+Most execution works by running instructions concretely:
+\begin{verbatim}
+---             ax: 1   , bx: 2
+mov %bx %ax     ax: 2   , bx: 2
+add %ax $4      ax: 6   , bx: 2
+\end{verbatim}
+\bigskip
+
+Symbolic execution, with symbolic state:
+\begin{verbatim}
+---             ax: v1  , bx: v2
+mov %bx %ax     ax: v2  , bx: v2
+add %ax $4      ax: v2+4, bx: v2
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile=singleslide]{Symbolic Execution -- branching}
+\begin{minipage}[t]{0.45\textwidth}
+Concrete execution:
+\begin{Verbatim}[fontsize=\small]
+-----------     ax: 1    bx: 1
+cmp %ax %bx     ax: 1    bx: 1
+je .if_true     
+; false
+add %ax $4
+jmp short .end
+.if_true:
+add %ax $5      ax: 6    bx: 1
+.end:
+\end{Verbatim}
+\end{minipage}%
+\begin{minipage}[t]{0.45\textwidth}
+Symbolic execution, with symbolic state:
+\begin{Verbatim}[fontsize=\small]
+-----------     ax: v1   bx: v2
+cmp %ax %bx     
+je .if_true     
+; false
+add %ax $4      ax: v1+4 bx: v2
+jmp short .end
+.if_true:
+add %ax $5      ax: v1+5 bx: v2
+.end:
+---- v1==v2 ->  ax: v1+5 bx: v2
+---- v1!=v2 ->  ax: v1+4 bx: v2
+\end{Verbatim}
+\end{minipage}
+\bigskip
+
+For symbolic execution, we end up having to follow two executions. This can become exponential.
+\end{frame}
+
+
 \begin{frame}{Related Work}
 
-Symbolic execution is used in two major ways. One is to validate static code analysis results, the other is pure symbolic execution. The first approach is followed by Oyente, sCompile, Mythril, etc. These are typically incomplete, and false positives are allowed.
+Symbolic execution is used in two major ways. One is to \textbf{validate static code analysis} results, the other is \textbf{pure symbolic execution}. The first approach is followed by Oyente, sCompile, Mythril, etc. These are typically incomplete, and false positives are allowed.
 
 \bigskip
 
@@ -108,67 +162,10 @@ Purely symbolic execution-based systems:
 \item \textbf{halmos}: written in python, with its own IR and internal rewrite engine
 \item \textbf{KEVM}: K-framework based, allows to ``break out'' into K to prove lemmas
 \end{itemize}
-
 \end{frame}
 
-%
-%\begin{frame}[fragile=singleslide]{Symbolic Execution -- straight line program}
-%
-%Most execution works by running instructions concretely:
-%\begin{verbatim}
-%---             ax: 1   , bx: 2
-%mov %bx %ax     ax: 2   , bx: 2
-%add %ax $4      ax: 6   , bx: 2
-%\end{verbatim}
-%\bigskip
-%
-%Symbolic execution, with symbolic state:
-%\begin{verbatim}
-%---             ax: v1  , bx: v2
-%mov %bx %ax     ax: v2  , bx: v2
-%add %ax $4      ax: v2+4, bx: v2
-%\end{verbatim}
-%\end{frame}
-%
-%\begin{frame}[fragile=singleslide]{Symbolic Execution -- branching}
-%\begin{minipage}[t]{0.45\textwidth}
-%Concrete execution:
-%\begin{Verbatim}[fontsize=\small]
-%-----------     ax: 1    bx: 1
-%cmp %ax %bx     ax: 1    bx: 1
-%je .if_true     
-%; false
-%add %ax $4
-%jmp short .end
-%.if_true:
-%add %ax $5      ax: 6    bx: 1
-%.end:
-%\end{Verbatim}
-%\end{minipage}%
-%\begin{minipage}[t]{0.45\textwidth}
-%Symbolic execution, with symbolic state:
-%\begin{Verbatim}[fontsize=\small]
-%-----------     ax: v1   bx: v2
-%cmp %ax %bx     
-%je .if_true     
-%; false
-%add %ax $4      ax: v1+4 bx: v2
-%jmp short .end
-%.if_true:
-%add %ax $5      ax: v1+5 bx: v2
-%.end:
-%---- v1==v2 ->  ax: v1+5 bx: v2
-%---- v1!=v2 ->  ax: v1+4 bx: v2
-%\end{Verbatim}
-%\end{minipage}
-%\bigskip
-
-%For symbolic execution, we end up having to follow two executions. This can become exponential.
-%
-%\end{frame}
 
 \section{Overview of hevm}
-
 \begin{frame}{hevm}
 \begin{itemize}
 \item Implements EVM semantics for concrete and symbolic execution
@@ -179,11 +176,6 @@ Purely symbolic execution-based systems:
 \item Displays call needed to trigger the bad state/invalidate the invariant
 \end{itemize}
 \end{frame}
-
-
-
-
-
 
 
 %\begin{frame}[fragile=singleslide]{Symbolic Execution: example}
@@ -285,150 +277,152 @@ Limitations:
 
 
 
-%\begin{frame}[fragile=singleslide]{Intermediate Representation}
-%\small
-%
-%Through the symbolic execution engine we create an expression that captures all end-states. We then take each end-state out and filter it for things we are looking for, e.g. assertion failures. Let's take the example:
-%
-%
-%\begin{Verbatim}[frame=single, framerule=0.2mm,framesep=2mm,fontsize=\small]
-%function overflow(uint a) public pure {
-%	uint b;
-%	unchecked { b = a + 1;}
-%	assert(b > a);
-%}
-%\end{Verbatim}
-%
-%The expression to generate a counterexamle for this could look like:
-%
-%\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
-%PLEq (Add (Var "a") (Lit 1)) (Var "a")
-%\end{Verbatim}
-%
-%Notice: we use less-or-equal, because we want a \textbf{counterexample}
-%\end{frame}
+\begin{frame}[fragile=singleslide]{Intermediate Representation}
+\small
 
-%\begin{frame}[fragile]{Intermediate Representation}
-%\begin{tikzpicture}[node distance=2cm]
-%\centering
-%\tiny
-%%ITE node
-%
-%%the source code
-%\node (program) [code]
-%{\begin{lstlisting}[numbers=none]
-%contract MyContract {
-%  mapping(uint => uint) items;
-%  function test(uint val1) public {
-%    require(val1 > 10);
-%    unchecked {
-%      items[4] = val1+1;
-%      assert(items[4] > 10); } } }
-%\end{lstlisting}};
-%
-%\node (dec1) [decision, right of=program, xshift=6.5cm]
-%%\node[draw, align=left] at (6,7)
-%{\begin{lstlisting}[numbers=none]
-%(ITE (IsZero TxValue)) ...
-%\end{lstlisting}};
-%
-%% left of that:
-%%\node[draw, align=left] at (0,6)
-%\node (pro1) [process, below of=program, yshift=0.3cm]
-%{\begin{lstlisting}[numbers=none]
-%(Failure Error: Revert)
-%  Assertions:
-%    (PEq (IsZero TxValue) 0 )
-%    (PLT (BufLength (AbstractBuf "txdata")) 18446744073709551616 )
-%\end{lstlisting}};
-%
-%% ITE node after:
-%%\node[draw, align=left] at (6,6)
-%\node (dec2) [decision, below of=dec1, yshift=0.5cm]
-%{\begin{lstlisting}[numbers=none]
-%ITE (LT 10 (Var "arg1")) ...
-%\end{lstlisting}};
-%
-%% left of that:
-%%\node[draw, align=left] at (0,4)
-%\node (pro2) [process, below of=pro1, yshift=0.5cm]
-%{\begin{lstlisting}[numbers=none]
-%(Failure Error: Revert [..])
-%  Assertions:
-%    (PEq (LT 10 (Var "arg1")) 0 )
-%    (PEq TxValue 0 )
-%    (PLT (BufLength (AbstractBuf "txdata")) 18446744073709551616 )
-%\end{lstlisting}};
-%
-%% ITE node after:
-%%\node[draw, align=left] at (6,4)
-%\node (dec3) [decision, below of=dec2, yshift=0.5cm]
-%{\begin{lstlisting}[numbers=none]
-%ITE (LT (Add 1 (Var "arg1")) 10)...
-%\end{lstlisting}};
-%
-%%left of that:
-%%\node[draw] at (0,2)
-%\node (pro3) [process, below of=pro2, yshift=0.5cm]
-%{\begin{lstlisting}[numbers=none]
-%(Failure Error: Revert [...])
-%  Assertions:
-%    ....
-%\end{lstlisting}};
-%
-%%right of that:
-%%\node[draw] at (8,2)v
-%\node (pro4) [process, below of=dec3, yshift=0.3cm]
-%{\begin{lstlisting}[numbers=none]
-%(Success [...])
-%  Assertions:
-%    (PEq 37470[...] (Keccak (ConcreteBuf [...])))
-%    (PLT (Add 1 (Var "arg1")) 10 )
-%    (PLT 10 (Var "arg1"))
-%    (PEq TxValue 0)
-%    (PLT (BufLength (AbstractBuf "txdata")) 18446744073709551616)
-%\end{lstlisting}};
-%
-%\draw [arrow3] (program) --node[anchor=south] {\tiny Symbolic Interpretation} (dec1);
-%\draw [arrow2] (dec1) --node[anchor=north]{False}  (pro1);
-%\draw [arrow]  (dec1) --node[anchor=west]{True}   (dec2);
-%\draw [arrow2] (dec2) --node[anchor=north]{False}  (pro2);
-%\draw [arrow]  (dec2) --node[anchor=west]{True}   (dec3);
-%\draw [arrow2] (dec3) --node[anchor=south]{}  (pro3);
-%\draw [arrow]  (dec3) --node[anchor=north]{}   (pro4);
-%
-%    \end{tikzpicture}
-%
-%\end{frame}
+Through the symbolic execution engine we create an expression that captures all end-states. We then take each end-state out and filter it for things we are looking for, e.g. assertion failures. Let's take the example:
 
+
+\begin{Verbatim}[frame=single, framerule=0.2mm,framesep=2mm,fontsize=\small]
+function overflow(uint a) public pure {
+	uint b;
+	unchecked { b = a + 1;}
+	assert(b > a);
+}
+\end{Verbatim}
+
+The expression to generate a counterexamle for this could look like:
+
+\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
+PLEq (Add (Var "a") (Lit 1)) (Var "a")
+\end{Verbatim}
+
+Notice: we use less-or-equal, because we want a \textbf{counterexample}
+\end{frame}
+
+\begin{frame}[fragile]{Intermediate Representation}
+\begin{tikzpicture}[node distance=2cm]
+\centering
+\tiny
+%ITE node
+
+%the source code
+\node (program) [code]
+{\begin{lstlisting}[numbers=none]
+contract MyContract {
+  mapping(uint => uint) items;
+  function test(uint val1) public {
+    require(val1 > 10);
+    unchecked {
+      items[4] = val1+1;
+      assert(items[4] > 10); } } }
+\end{lstlisting}};
+
+\node (dec1) [decision, right of=program, xshift=6.5cm]
+%\node[draw, align=left] at (6,7)
+{\begin{lstlisting}[numbers=none]
+(ITE (IsZero TxValue)) ...
+\end{lstlisting}};
+
+% left of that:
+%\node[draw, align=left] at (0,6)
+\node (pro1) [process, below of=program, yshift=0.3cm]
+{\begin{lstlisting}[numbers=none]
+(Failure Error: Revert)
+  Assertions:
+    (PEq (IsZero TxValue) 0 )
+    (PLT (BufLength (AbstractBuf "txdata")) 18446744073709551616 )
+\end{lstlisting}};
+
+% ITE node after:
+%\node[draw, align=left] at (6,6)
+\node (dec2) [decision, below of=dec1, yshift=0.5cm]
+{\begin{lstlisting}[numbers=none]
+ITE (LT 10 (Var "arg1")) ...
+\end{lstlisting}};
+
+% left of that:
+%\node[draw, align=left] at (0,4)
+\node (pro2) [process, below of=pro1, yshift=0.5cm]
+{\begin{lstlisting}[numbers=none]
+(Failure Error: Revert [..])
+  Assertions:
+    (PEq (LT 10 (Var "arg1")) 0 )
+    (PEq TxValue 0 )
+    (PLT (BufLength (AbstractBuf "txdata")) 18446744073709551616 )
+\end{lstlisting}};
+
+% ITE node after:
+%\node[draw, align=left] at (6,4)
+\node (dec3) [decision, below of=dec2, yshift=0.5cm]
+{\begin{lstlisting}[numbers=none]
+ITE (LT (Add 1 (Var "arg1")) 10)...
+\end{lstlisting}};
+
+%left of that:
+%\node[draw] at (0,2)
+\node (pro3) [process, below of=pro2, yshift=0.5cm]
+{\begin{lstlisting}[numbers=none]
+(Failure Error: Revert [...])
+  Assertions:
+    ....
+\end{lstlisting}};
+
+%right of that:
+%\node[draw] at (8,2)v
+\node (pro4) [process, below of=dec3, yshift=0.3cm]
+{\begin{lstlisting}[numbers=none]
+(Success [...])
+  Assertions:
+    (PEq 37470[...] (Keccak (ConcreteBuf [...])))
+    (PLT (Add 1 (Var "arg1")) 10 )
+    (PLT 10 (Var "arg1"))
+    (PEq TxValue 0)
+    (PLT (BufLength (AbstractBuf "txdata")) 18446744073709551616)
+\end{lstlisting}};
+
+\draw [arrow3] (program) --node[anchor=south] {\tiny Symbolic Interpretation} (dec1);
+\draw [arrow2] (dec1) --node[anchor=north]{False}  (pro1);
+\draw [arrow]  (dec1) --node[anchor=west]{True}   (dec2);
+\draw [arrow2] (dec2) --node[anchor=north]{False}  (pro2);
+\draw [arrow]  (dec2) --node[anchor=west]{True}   (dec3);
+\draw [arrow2] (dec3) --node[anchor=south]{}  (pro3);
+\draw [arrow]  (dec3) --node[anchor=north]{}   (pro4);
+
+    \end{tikzpicture}
+
+\end{frame}
+
+
+\begin{frame}[fragile=singleslide]{Intermediate Representation: Writes}
+Writing in a buffer is represented as a chain of writes:
+\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
+AbstractBuf "a" // empty buffer
+WriteWord (Lit 1) (Var "a") (AbstractBuf "a") //1st write
+WriteWord (Lit 2) (Var "b") (WriteWord (Lit 1) (Var "a") (AbstractBuf "a")) //2nd
+\end{Verbatim}
+
+This can later be collapsed, e.g. in case the variables are concertized. We use \texttt{(AbstractBuf "var")} for symbolic, and \texttt{(ConcreteBuf "value")} for concrete values.
+\bigskip
+
+Allows us to simply prepend an operation for each instruction.
+
+We later collapse \& simplify these writes.
+\end{frame}
+
+\begin{frame}[fragile=singleslide]{Intermediate Representation: Keccak}
+Keccak, i.e. SHA-3 is used extensively by all contracts. This is because \textbf{storage of contracts is an unstructured array} of uint256. Hence, to implement e.g. maps and an arrays, one needs to use Keccak to map to a "random" position in storage, so as not to clash.
+\bigskip
+
+It's very expensive to accurately represent Keccak in SMT. Hence, we represent Keccak as an \textbf{uninterpreted function} in SMT, with the following rules:
+\begin{itemize}
+\item We know the concrete value of the input $\rightarrow$ we add the axiom $keccak(input)=output$
+\item Size of input differs $\rightarrow$ hash differs. We assert this for all pairs
+\item Assert all pairs of keccak to be unequal if they don't match over \emph{partial} concrete values
+\item $keccak(x) > 128$. Small slot values are used for non-map/array elements of contracts
+\end{itemize}
+\end{frame}
 %
-%\begin{frame}[fragile=singleslide]{Intermediate Representation: Writes}
-%Writing in a buffer is represented as a chain of writes:
-%\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
-%AbstractBuf "a" // empty buffer
-%WriteWord (Lit 1) (Var "a") (AbstractBuf "a") //1st write
-%WriteWord (Lit 2) (Var "b") (WriteWord (Lit 1) (Var "a") (AbstractBuf "a")) //2nd
-%\end{Verbatim}
-%
-%This can later be collapsed, e.g. in case the variables are concertized. We use \texttt{(AbstractBuf "var")} for symbolic, and \texttt{(ConcreteBuf "value")} for concrete values.
-%\bigskip
-%
-%While this can be inefficient, it allows us perform symbolic execution as fast as possible, only prepending an operation for each instruction. We can (and do) later collapse \& simplify these writes.
-%\end{frame}
-%
-%\begin{frame}[fragile=singleslide]{Intermediate Representation: Keccak}
-%Keccak, i.e. SHA-3 is used extensively by all contracts in EVM. This is because e.g. \textbf{storage of contracts is an unstructured array} of uint256. Hence, to implement e.g. maps and an arrays, one needs to use Keccak to map to a "random" position in storage, so as not to clash.
-%\bigskip
-%
-%It's very expensive to accurately represent Keccak in SMT. Hence, we represent Keccak as an \textbf{uninterpreted function} in SMT, with the following rules:
-%\begin{itemize}
-%\item We know the concrete value of the input $\rightarrow$ we add the axiom $keccak(input)=output$
-%\item Size of value hash differs $\rightarrow$ hash differs. We assert this for all pairs
-%\item Assert all pairs of keccak to be unequal if they don't match over \emph{partial} concrete values
-%\item $keccak(x) > 128$. Small slot values are used for non-map/array elements of contracts
-%\end{itemize}
-%\end{frame}
-%%
 %\begin{frame}[fragile=singleslide]{Intermediate Representation: Maps}
 %Storage of contracts is an unstructured array of uint256. Solidity uses: $keccak (bytes32(key) || bytes32(id))$ to map $mymap[key]$ where $id$ is the map index:
 %
@@ -443,36 +437,36 @@ Limitations:
 %
 %Notice that the SMT solver can use our Keccak rules to do this, too, but it's a lot slower
 %\end{frame}
-%
-%\begin{frame}[fragile=singleslide]{Intermediate Representation: Simplification} 
-%We do all the following rewrites to fixedpoint:
-%\begin{itemize}
-%\item Canonicalization of all commutative operators (concrete value first)
-%\item Canonicalization of all less-than/greater-than/etc operators
-%\item Canonicalization of all Keccak expressions to match Solidity patterns
-%\item Stripping writes when they are not read
-%\item Stripping reads when they are not used
-%\item Constant folding
-%\item (In)equality propagation
-%\item All meaningful rewrites, such as min/max/add+sub/add+add/sub+sub/etc.
-%\item Delayed simplification of Keccak expressions to keep structure as much as possible
-%\end{itemize}
-%\end{frame}
 
-%\begin{frame}[fragile=singleslide]{Intermediate Representation: Haskell to the Rescue}
-%
-%Haskell supports algebraic data types (ADTs), so our intermediate representation (IR) can be fully typed. Furthermore, Haskell supports pattern matching, so our rewrite rules are easy to read \& write:
-%\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
-%    -- syntactic Eq reduction
-%    go (Eq (Lit a) (Lit b))
-%      | a == b = Lit 1
-%      | otherwise = Lit 0
-%    go (Eq (Lit 0) (Sub a b)) = eq a b
-%    go (Eq a b)
-%      | a == b = Lit 1
-%      | otherwise = eq a b
-%\end{Verbatim}
-%\end{frame}
+\begin{frame}[fragile=singleslide]{Intermediate Representation: Simplification} 
+We do all the following rewrites to fixedpoint:
+\begin{itemize}
+\item Constant folding
+\item Canonicalization of all commutative operators (concrete value first)
+\item Canonicalization of all less-than/greater-than/etc operators
+\item Canonicalization of all Keccak expressions to match Solidity patterns
+\item Stripping writes when they are not read
+\item Stripping reads when they are not used
+\item (In)equality propagation
+\item All meaningful rewrites, such as min/max/add+sub/add+add/sub+sub/etc.
+\item Special rewrite rules for array/map lookups and other Solidity patterns
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile=singleslide]{Intermediate Representation: Haskell to the Rescue}
+
+Haskell supports algebraic data types (ADTs), so our intermediate representation (IR) can be fully typed. Furthermore, Haskell supports pattern matching, so our rewrite rules are easy to read \& write:
+\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
+    -- syntactic Eq reduction
+    go (Eq (Lit a) (Lit b))
+      | a == b = Lit 1
+      | otherwise = Lit 0
+    go (Eq (Lit 0) (Sub a b)) = eq a b
+    go (Eq a b)
+      | a == b = Lit 1
+      | otherwise = eq a b
+\end{Verbatim}
+\end{frame}
 
 %\begin{frame}[fragile=singleslide]{What can we use the IR for?}
 %\begin{itemize}
@@ -498,33 +492,33 @@ Limitations:
 %
 %\end{frame}
 
-%\begin{frame}[fragile=singleslide]{Solving the IR: using an SMT Solver}
-%The IR is translated in a straightforward manner to SMT. Let's say the expression is:
-%
-%\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
-%PLEq (Add (Var "a") (Lit 1)) (Var "a")
-%\end{Verbatim}
-%
-%The SMT expression for this could be:
-%
-%\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
-%(set-logic QF_AUFBV)
-%(define-sort Word () (_ BitVec 256))
-%(declare-const varA (Word))
-%(assert (bvule (bvadd varA (_ bv1 256)) varA))
-%(check-sat)
-%\end{Verbatim}
-%
-%Z3 gives the answer:
-%
-%\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
-%sat
-%(
-%  (define-fun varA () (_ BitVec 256)
-%    #xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
-%)
-%\end{Verbatim}
-%\end{frame}
+\begin{frame}[fragile=singleslide]{Solving the IR: using an SMT Solver}
+The IR is translated in a straightforward manner to SMT. Let's say the expression is:
+
+\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
+PLEq (Add (Var "a") (Lit 1)) (Var "a")
+\end{Verbatim}
+
+The SMT expression for this could be:
+
+\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
+(set-logic QF_AUFBV)
+(define-sort Word () (_ BitVec 256))
+(declare-const varA (Word))
+(assert (bvule (bvadd varA (_ bv1 256)) varA))
+(check-sat)
+\end{Verbatim}
+
+Z3 gives the answer:
+
+\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
+sat
+(
+  (define-fun varA () (_ BitVec 256)
+    #xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+)
+\end{Verbatim}
+\end{frame}
 
 %\begin{frame}[fragile=singleslide]{Using hevm}
 %
