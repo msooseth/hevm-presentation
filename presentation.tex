@@ -50,7 +50,7 @@
     \tableofcontents
 \end{frame}
 
-\section{Symbolic Execution}
+\section{What is Symbolic Execution}
 
 % \begin{frame}{A Quick Recap of Ethereum}
 % Ethereum is the second largest cryptocurrency in terms of value. Ethereum has:
@@ -168,14 +168,18 @@ Purely symbolic execution-based systems:
 
 
 \section{Overview of hevm}
-\begin{frame}{hevm}
+\begin{frame}{Overview of hevm}
 \begin{itemize}
+\item Started $\approx7$ years ago as part of dapptools, but is now a standalone tool
 \item Implements EVM semantics for concrete and symbolic execution
-\item Can do both concrete and symbolic execution
 \item Examines \emph{all}\footnote{loops/recursion is an issue, we have a loop/depth limit} execution paths from the starting state
-\item Finds the set of requirements to reach all failing paths (i.e. \texttt{assert}-s)
-\item Runs external SMT solver to find input to reach them
-\item Displays call needed to trigger the bad state/invalidate the invariant
+\item Finds the set of requirements to reach all failing paths
+\item Runs external SMT solver(s) to find input to reach them
+\item Displays call needed to trigger:
+\begin{itemize}
+    \item the fault: \texttt{hevm test}
+    \item the discrepancy: \texttt{hevm equivalence}
+\end{itemize}
 \end{itemize}
 \end{frame}
 
@@ -250,15 +254,14 @@ Purely symbolic execution-based systems:
 %hevm can give the exact \textbf{call to trigger the discrepancy} between the two functions. This way, you can safely improve the gas performance of your code.
 %\end{frame}
 
-\section{hevm, the details}
-
 \begin{frame}{hevm's Symbolic Executor}
 hevm's symbolic executor is very powerful:
 \begin{itemize}
 \item \textbf{Operates on bytecode} so runs everything deployed to the chain
 \item Understands \textbf{all of EVM}: stack, call frames, memory, storage, calldata
-\item Can run on any \textbf{point in blockchain history}, through RPC
-\item Can be used to \textbf{chain together symbolic transactions}
+\item Can run on any \textbf{point in blockchain history} via RPC to an archive node
+\item Will pull all required \textbf{contracts} from the chain via RPC to a full node
+% \item Can be used to \textbf{chain together symbolic transactions}
 \item Fuzzed against concrete execution (geth) for correctness
 \end{itemize}
 \bigskip
@@ -274,16 +277,13 @@ Limitations:
 \begin{frame}{hevm internals}
 \centering
 \includegraphics[scale=0.6]{hevm-overview}
-
 \end{frame}
-
 
 
 \begin{frame}[fragile=singleslide]{Intermediate Representation}
 \small
 
 Through the symbolic execution engine we create an expression that captures all end-states. We then take each end-state out and filter it for things we are looking for, e.g. assertion failures. Let's take the example:
-
 
 \begin{Verbatim}[frame=single, framerule=0.2mm,framesep=2mm,fontsize=\small]
 function overflow(uint a) public pure {
@@ -439,20 +439,21 @@ ITE (LT (Add 1 (Var "arg1")) 10)...
 % Notice that the SMT solver can use our Keccak rules to do this, too, but it's a lot slower
 % \end{frame}
 
-\begin{frame}[fragile=singleslide]{Intermediate Representation: Simplification} 
-We do all the following rewrites to fixedpoint:
-\begin{itemize}
-\item Constant folding
-\item Canonicalization of all commutative operators (concrete value first)
-\item Canonicalization of all less-than/greater-than/etc operators
-\item Canonicalization of all Keccak expressions to match Solidity patterns
-\item Stripping writes when they are not read
-\item Stripping reads when they are not used
-\item (In)equality propagation
-\item All meaningful rewrites, such as min/max/add+sub/add+add/sub+sub/etc.
-\item Special rewrite rules for array/map lookups and other Solidity patterns
-\end{itemize}
-\end{frame}
+%% DEVCON maybe add?
+% \begin{frame}[fragile=singleslide]{Intermediate Representation: Simplification} 
+% We do all the following rewrites to fixedpoint:
+% \begin{itemize}
+% \item Constant folding
+% \item Canonicalization of all commutative operators (concrete value first)
+% \item Canonicalization of all less-than/greater-than/etc operators
+% \item Canonicalization of all Keccak expressions to match Solidity patterns
+% \item Stripping writes when they are not read
+% \item Stripping reads when they are not used
+% \item (In)equality propagation
+% \item All meaningful rewrites, such as min/max/add+sub/add+add/sub+sub/etc.
+% \item Special rewrite rules for array/map lookups and other Solidity patterns
+% \end{itemize}
+% \end{frame}
 
 % \begin{frame}[fragile=singleslide]{Intermediate Representation: Haskell to the Rescue}
 
@@ -521,33 +522,84 @@ sat
 \end{Verbatim}
 \end{frame}
 
-\begin{frame}[fragile=singleslide]{Using hevm}
+\section{How to Use hevm}
 
-Install foundry [1]. Get static hevm binary [2]. Install z3 [3]. Add foundry test cases, and prepend with \texttt{``prove\_''} the ones you want hevm to use:
+\begin{frame}[fragile=singleslide]{Using ``hevm test''}
 
-\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
-function prove_add(uint x, uint y) public pure {
-    unchecked { if (x + y < x) return; }
-    assert(x + y >= x);
-}
-\end{Verbatim}
-
-Then run with:
+Install foundry [1]. Get static hevm binary [2]. Install z3 [3]. Add foundry test cases, and prepend with \texttt{``prove\_''} the ones you want hevm to check:
 
 \begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
-forge build
-hevm test
+import {Test} from "forge-std/Test.sol";
+contract MyContract is Test {
+  function prove_add_fail(uint x, uint y) public pure {
+      unchecked { 
+          uint256 z = x + y;
+          assert(z >= x);
+      } } }
 \end{Verbatim}
 
+\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
+forge build --ast && hevm test
+[RUNNING] prove_add_fail(uint256,uint256)
+   [FAIL] prove_add_fail(uint256,uint256)
+   Counterexample:
+     calldata: prove_add_fail(1,115792089237316195423570...)
+\end{Verbatim}
+\tiny [1] \url{https://github.com/foundry-rs/foundry} [2] \url{https://github.com/ethereum/hevm/releases} [3] \url{https://github.com/Z3Prover/z3}
+\end{frame}
+
+\begin{frame}[fragile=singleslide]{Using ``hevm equivalence''}
+\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
+$ time --verbose hevm equivalence --code-a "0x...." --code-b "0x..."
+[WARNING] hevm was only able to partially explore the contract due to the following
+issue(s):
+  - Unexpected Symbolic Arguments to Opcode
+    msg: "call target has unknown code"
+    opcode: STATICCALL
+    program counter: 14137
+    arguments:
+      0x0000000000000000000000000000000000000000
+    [...]
+Found 1729225 total pairs of endstates
+No discrepancies found
+But the following issues occurred:
+      93x -> CopySlice with a symbolically sized region not currently implemented
+      2x -> SMT result timeout/unknown
+Command exited with non-zero status 1
+        User time (seconds): 45762.27
+        Elapsed (wall clock) time (h:mm:ss or m:ss): 34:32.70
+\end{Verbatim}
+\end{frame}
+
+\begin{frame}[fragile=singleslide]{References \& Pro Tips Using hevm}
+References:
+\begin{itemize}
+    \item hevm repository: \url{https://github.com/ethereum/hevm/}
+    \item hevm user guide: \url{https://hevm.dev/}
+    \item Forge testing guide: \url{https://book.getfoundry.sh/forge/writing-tests}
+\end{itemize}
 
 \bigskip
 
-[1] \url{https://github.com/foundry-rs/foundry}
+Pro tips:
+\begin{itemize}
+    \item Equivalence testing can be a useful way to check if a refactoring is correct
+    \item The spec of your contract is effectively its set of test cases
+    \item Write both \textbf{postive and negative} test cases. Ex:
+        \begin{itemize}
+            \item Positive test: required number of signatures are met, transfer allowed
+            \item Negative test: required number of signatures are not met, transfer not allowed
+        \end{itemize}
+    \item Even if ``hevm test'' emits warnings, it still adds a level of assurance beyond pure fuzzing
+    \item Think of hevm as a tool in your toolbox
+    % \item If you encounter a bug, don't be afraid to report it as a GitHub issue
+\end{itemize}
 
-[2] \url{https://github.com/ethereum/hevm/releases}
+% \bigskip
 
-[3] \url{https://github.com/Z3Prover/z3}
+% Contributing: All PRs are welcome. Haskell can be a bit intimidating, but it's a very expressive language
 \end{frame}
+
 
 
 %\begin{frame}[fragile=singleslide]{Results}
@@ -604,14 +656,14 @@ hevm has a number of inherent limitations:
 \item Loops are challenging. We have an iteration limit until which loops are examined
 \item Recursion, and parametric calls can cause hevm to only partially explore the state
 \item Complicated mathematical expressions (e.g. division, modulo) can cause a challenge
-\item hevm is not verified, and neither are SMT solvers. Future: SMT solvers will emit a proof
+\item hevm is not verified, and neither are SMT solvers
 \end{itemize}
 \vspace{2ex}
 
 Future work:
 \begin{itemize}
-\item CFG extraction to better handle recursion and loops
-\item Invariant computation for loops
+\item Usability improvements, e.g. symbolic JUMPDEST handling
+\item Better handling of loops and recursion: include into IR, and solve for invariant via CHC
 \end{itemize}
 
 \bigskip
