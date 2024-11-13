@@ -21,10 +21,10 @@
 
 
 
-\title[hevm]{hevm, a Fast Symbolic Execution Framework for EVM Bytecode} 
+\title[hevm]{hevm, or: How I Learnt to Stop Worrying and Love the Symbolic Execution} 
 \author[dxo, Soos, Paraskevopoulou, Lundfall, Brockmann]{dxo$^{1}$, \emph{Mate Soos$^{1}$}, Zoe Paraskevopoulou$^{1}$, Martin Lundfall$^{2}$, Mikael Brockman$^{2}$}
-\institute[]{$^{1}$ Ethereum Foundation, $^{2}$ Independent Researcher}
-%\date{26th of July 2024, Montreal, Canada}
+\institute[]{$^{1}$ Argot Collective, $^{2}$ Independent Researcher}
+\date{14th of November 2024, Bangkok, Thailand}
 %\logo{sdfsdaf}
 
 
@@ -50,25 +50,25 @@
     \tableofcontents
 \end{frame}
 
-\section{Recap of Ethereum \& Related Work}
+\section{Symbolic Execution}
 
-\begin{frame}{A Quick Recap of Ethereum}
-Ethereum is the second largest cryptocurrency in terms of value. Ethereum has:
-\begin{itemize}
-\item Contracts with \textbf{code and storage}, unlike e.g. Bitcoin
-\item Stack-based VM, the EVM. Most popular executor of EVM: \textbf{geth}
-\item ACID execution semantics, like a \textbf{database}
-\item Proof-of-stake as its \textbf{consensus layer} -- ordering transactions
-\end{itemize}
+% \begin{frame}{A Quick Recap of Ethereum}
+% Ethereum is the second largest cryptocurrency in terms of value. Ethereum has:
+% \begin{itemize}
+% \item Contracts with \textbf{code and storage}, unlike e.g. Bitcoin
+% \item Stack-based VM, the EVM. Most popular executor of EVM: \textbf{geth}
+% \item ACID execution semantics, like a \textbf{database}
+% \item Proof-of-stake as its \textbf{consensus layer} -- ordering transactions
+% \end{itemize}
 
-Downsides:
-\begin{itemize}
-\item Code and data are not clearly separated ("EOF" will solve)
-\item JUMP destinations are known, but dynamic jumps are possible
-\item All EVM instructions operate on 256b values
-\end{itemize}
+% Downsides:
+% \begin{itemize}
+% \item Code and data are not clearly separated ("EOF" will solve)
+% \item JUMP destinations are known, but dynamic jumps are possible
+% \item All EVM instructions operate on 256b values
+% \end{itemize}
 
-\end{frame}
+% \end{frame}
 
 \begin{frame}[fragile=singleslide]{Symbolic Execution vs Fuzzing}
 Say your code is:
@@ -395,50 +395,49 @@ ITE (LT (Add 1 (Var "arg1")) 10)...
 
 \end{frame}
 
+% \begin{frame}[fragile=singleslide]{Intermediate Representation: Writes}
+% Writing in a buffer is represented as a chain of writes:
+% \begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
+% AbstractBuf "a" // empty buffer
+% WriteWord (Lit 1) (Var "a") (AbstractBuf "a") //1st write
+% WriteWord (Lit 2) (Var "b") (WriteWord (Lit 1) (Var "a") (AbstractBuf "a")) //2nd
+% \end{Verbatim}
 
-\begin{frame}[fragile=singleslide]{Intermediate Representation: Writes}
-Writing in a buffer is represented as a chain of writes:
-\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
-AbstractBuf "a" // empty buffer
-WriteWord (Lit 1) (Var "a") (AbstractBuf "a") //1st write
-WriteWord (Lit 2) (Var "b") (WriteWord (Lit 1) (Var "a") (AbstractBuf "a")) //2nd
-\end{Verbatim}
+% This can later be collapsed, e.g. in case the variables are concertized. We use \texttt{(AbstractBuf "var")} for symbolic, and \texttt{(ConcreteBuf "value")} for concrete values.
+% \bigskip
 
-This can later be collapsed, e.g. in case the variables are concertized. We use \texttt{(AbstractBuf "var")} for symbolic, and \texttt{(ConcreteBuf "value")} for concrete values.
-\bigskip
+% Allows us to simply prepend an operation for each instruction.
 
-Allows us to simply prepend an operation for each instruction.
+% We later collapse \& simplify these writes.
+% \end{frame}
 
-We later collapse \& simplify these writes.
-\end{frame}
+% \begin{frame}[fragile=singleslide]{Intermediate Representation: Keccak}
+% Keccak, i.e. SHA-3 is used extensively by all contracts. This is because \textbf{storage of contracts is an unstructured array} of uint256. Hence, to implement e.g. maps and an arrays, one needs to use Keccak to map to a "random" position in storage, so as not to clash.
+% \bigskip
 
-\begin{frame}[fragile=singleslide]{Intermediate Representation: Keccak}
-Keccak, i.e. SHA-3 is used extensively by all contracts. This is because \textbf{storage of contracts is an unstructured array} of uint256. Hence, to implement e.g. maps and an arrays, one needs to use Keccak to map to a "random" position in storage, so as not to clash.
-\bigskip
-
-It's very expensive to accurately represent Keccak in SMT. Hence, we represent Keccak as an \textbf{uninterpreted function} in SMT, with the following rules:
-\begin{itemize}
-\item We know the concrete value of the input $\rightarrow$ we add the axiom $keccak(input)=output$
-\item Size of input differs $\rightarrow$ hash differs. We assert this for all pairs
-\item Assert all pairs of keccak to be unequal if they don't match over \emph{partial} concrete values
-\item $keccak(x) > 128$. Small slot values are used for non-map/array elements of contracts
-\end{itemize}
-\end{frame}
+% It's very expensive to accurately represent Keccak in SMT. Hence, we represent Keccak as an \textbf{uninterpreted function} in SMT, with the following rules:
+% \begin{itemize}
+% \item We know the concrete value of the input $\rightarrow$ we add the axiom $keccak(input)=output$
+% \item Size of input differs $\rightarrow$ hash differs. We assert this for all pairs
+% \item Assert all pairs of keccak to be unequal if they don't match over \emph{partial} concrete values
+% \item $keccak(x) > 128$. Small slot values are used for non-map/array elements of contracts
+% \end{itemize}
+% \end{frame}
 %
-\begin{frame}[fragile=singleslide]{Intermediate Representation: Maps}
-Storage of contracts is an unstructured array of uint256. Solidity uses: $keccak (bytes32(key) || bytes32(id))$ to map $mymap[key]$ where $id$ is the map index:
+% \begin{frame}[fragile=singleslide]{Intermediate Representation: Maps}
+% Storage of contracts is an unstructured array of uint256. Solidity uses: $keccak (bytes32(key) || bytes32(id))$ to map $mymap[key]$ where $id$ is the map index:
 
-\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
-contract C {
-    mapping(uint => uint) map_id_0;
-    mapping(uint => uint) map_id_1;
-}
-\end{Verbatim}
-We have Solidity-specific rewrite rules to strip writes. So when writing two $keccak (bytes32(key) || bytes32(id))$-s on top of each other, and then reading, we traverse the list of writes to pick out the potentially matching one(s).
-\bigskip
+% \begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
+% contract C {
+%     mapping(uint => uint) map_id_0;
+%     mapping(uint => uint) map_id_1;
+% }
+% \end{Verbatim}
+% We have Solidity-specific rewrite rules to strip writes. So when writing two $keccak (bytes32(key) || bytes32(id))$-s on top of each other, and then reading, we traverse the list of writes to pick out the potentially matching one(s).
+% \bigskip
 
-Notice that the SMT solver can use our Keccak rules to do this, too, but it's a lot slower
-\end{frame}
+% Notice that the SMT solver can use our Keccak rules to do this, too, but it's a lot slower
+% \end{frame}
 
 \begin{frame}[fragile=singleslide]{Intermediate Representation: Simplification} 
 We do all the following rewrites to fixedpoint:
@@ -455,44 +454,44 @@ We do all the following rewrites to fixedpoint:
 \end{itemize}
 \end{frame}
 
-\begin{frame}[fragile=singleslide]{Intermediate Representation: Haskell to the Rescue}
+% \begin{frame}[fragile=singleslide]{Intermediate Representation: Haskell to the Rescue}
 
-Haskell supports algebraic data types (ADTs), so our intermediate representation (IR) can be fully typed. Furthermore, Haskell supports pattern matching, so our rewrite rules are easy to read \& write:
-\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
-    -- syntactic Eq reduction
-    go (Eq (Lit a) (Lit b))
-      | a == b = Lit 1
-      | otherwise = Lit 0
-    go (Eq (Lit 0) (Sub a b)) = eq a b
-    go (Eq a b)
-      | a == b = Lit 1
-      | otherwise = eq a b
-\end{Verbatim}
-\end{frame}
+% Haskell supports algebraic data types (ADTs), so our intermediate representation (IR) can be fully typed. Furthermore, Haskell supports pattern matching, so our rewrite rules are easy to read \& write:
+% \begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
+%     -- syntactic Eq reduction
+%     go (Eq (Lit a) (Lit b))
+%       | a == b = Lit 1
+%       | otherwise = Lit 0
+%     go (Eq (Lit 0) (Sub a b)) = eq a b
+%     go (Eq a b)
+%       | a == b = Lit 1
+%       | otherwise = eq a b
+% \end{Verbatim}
+% \end{frame}
 
-%\begin{frame}[fragile=singleslide]{What can we use the IR for?}
-%\begin{itemize}
-%\item Finding counterexamples with SMT solvers
-%\item Constant extraction: helping other fuzzers with "magic numbers"
-%\item Substitute constants and fold: we can build a fuzzer
-%\item Not just failing branches: automated test-case generation
-%\end{itemize}
-%
-%\end{frame}
+% \begin{frame}[fragile=singleslide]{What can we use the IR for?}
+% \begin{itemize}
+% \item Finding counterexamples with SMT solvers
+% \item Constant extraction: helping other fuzzers with "magic numbers"
+% \item Substitute constants and fold: we can build a fuzzer
+% \item Not just failing branches: automated test-case generation
+% \end{itemize}
 
-%\begin{frame}[fragile=singleslide]{Solving the IR: Creating a Fuzzer}
-%
-%Fuzzing sounds strange given that hevm is a symbolic execution engine. However:
-%\begin{itemize}
-%\item The IR is actually a very clean representation of the problem at hand
-%\item Due to the extensive simplifications applied, it can contain specific constants that may be very hard to find otherwise
-%\item IR \emph{could} be transpiled to assembly (potentially through \texttt{C}), and executed as a program
-%\end{itemize}
-%\bigskip
-%
-%Notice that geth, the normal EVM concrete executor is incredibly slow. Hence a transpiled IR could achieve serious speedup.
-%
-%\end{frame}
+% \end{frame}
+
+% \begin{frame}[fragile=singleslide]{Solving the IR: Creating a Fuzzer}
+
+% Fuzzing sounds strange given that hevm is a symbolic execution engine. However:
+% \begin{itemize}
+% \item The IR is actually a very clean representation of the problem at hand
+% \item Due to the extensive simplifications applied, it can contain specific constants that may be very hard to find otherwise
+% \item IR \emph{could} be transpiled to assembly (potentially through \texttt{C}), and executed as a program
+% \end{itemize}
+% \bigskip
+
+% Notice that geth, the normal EVM concrete executor is incredibly slow. Hence a transpiled IR could achieve serious speedup.
+
+% \end{frame}
 
 \begin{frame}[fragile=singleslide]{Solving the IR: using an SMT Solver}
 The IR is translated in a straightforward manner to SMT. Let's say the expression is:
@@ -522,33 +521,33 @@ sat
 \end{Verbatim}
 \end{frame}
 
-%\begin{frame}[fragile=singleslide]{Using hevm}
-%
-%Install foundry [1]. Get static hevm binary [2]. Install z3 [3]. Add foundry test cases, and prepend with \texttt{``prove\_''} the ones you want hevm to use:
-%
-%\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
-%function prove_add(uint x, uint y) public pure {
-%    unchecked { if (x + y < x) return; }
-%    assert(x + y >= x);
-%}
-%\end{Verbatim}
-%
-%Then run with:
-%
-%\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
-%forge build
-%hevm test
-%\end{Verbatim}
-%
-%
-%\bigskip
-%
-%[1] \url{https://github.com/foundry-rs/foundry}
-%
-%[2] \url{https://github.com/ethereum/hevm/releases}
-%
-%[3] \url{https://github.com/Z3Prover/z3}
-%\end{frame}
+\begin{frame}[fragile=singleslide]{Using hevm}
+
+Install foundry [1]. Get static hevm binary [2]. Install z3 [3]. Add foundry test cases, and prepend with \texttt{``prove\_''} the ones you want hevm to use:
+
+\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
+function prove_add(uint x, uint y) public pure {
+    unchecked { if (x + y < x) return; }
+    assert(x + y >= x);
+}
+\end{Verbatim}
+
+Then run with:
+
+\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
+forge build
+hevm test
+\end{Verbatim}
+
+
+\bigskip
+
+[1] \url{https://github.com/foundry-rs/foundry}
+
+[2] \url{https://github.com/ethereum/hevm/releases}
+
+[3] \url{https://github.com/Z3Prover/z3}
+\end{frame}
 
 
 %\begin{frame}[fragile=singleslide]{Results}
@@ -580,20 +579,20 @@ sat
 %\end{Verbatim}
 %\end{frame}
 
-\section{Results}
+% \section{Results}
 
-\begin{frame}[fragile=singleslide]{Results}
+% \begin{frame}[fragile=singleslide]{Results}
 
-We ran latest hevm, halmos, and kontrol (KEVM) on the Eth-SC Ethereum benchmarks [1], on an AMD 5950x with 5min timeout,  and 128GB of RAM. For more details: $\rightarrow$ see paper!
-{
-\begin{center}
-\includegraphics{cdf}
-\end{center}
-}
+% We ran latest hevm, halmos, and kontrol (KEVM) on the Eth-SC Ethereum benchmarks [1], on an AMD 5950x with 5min timeout,  and 128GB of RAM. For more details: $\rightarrow$ see paper!
+% {
+% \begin{center}
+% \includegraphics{cdf}
+% \end{center}
+% }
 
 
-[1] \qrcode[height=0.7cm]{https://github.com/eth-sc-comp/benchmarks/}\qquad  \url{https://github.com/eth-sc-comp/benchmarks/}
-\end{frame}
+% [1] \qrcode[height=0.7cm]{https://github.com/eth-sc-comp/benchmarks/}\qquad  \url{https://github.com/eth-sc-comp/benchmarks/}
+% \end{frame}
 
 
 \section{Conclusions}
