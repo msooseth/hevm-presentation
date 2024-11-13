@@ -585,13 +585,14 @@ Pro tips:
 \begin{itemize}
     \item Equivalence testing can be a useful way to check if a refactoring is correct
     \item The spec of your contract is effectively its set of test cases
-    \item Write both \textbf{postive and negative} test cases. Ex:
+    \item Write both \textbf{postive, negative, and invariant} tests. Ex:
         \begin{itemize}
             \item Positive test: required number of signatures are met, transfer allowed
             \item Negative test: required number of signatures are not met, transfer not allowed
+            \item Invariant test: after transfer, sum of balances is the same
         \end{itemize}
     \item Even if ``hevm test'' emits warnings, it still adds a level of assurance beyond pure fuzzing
-    \item Think of hevm as a tool in your toolbox
+    % \item Think of hevm as a tool in your toolbox
     % \item If you encounter a bug, don't be afraid to report it as a GitHub issue
 \end{itemize}
 
