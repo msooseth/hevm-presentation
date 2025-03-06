@@ -15,17 +15,12 @@
 \tikzstyle{arrow} = [thick,->,>=stealth]
 \tikzstyle{arrow2} = [thick, dashed, ->,>=stealth]
 \tikzstyle{arrow3} = [thick, ->, draw=blue]
-\definecolor{codegreen}{rgb}{0,0.6,0}
-\definecolor{codegray}{rgb}{0.5,0.5,0.5}
-\definecolor{codepurple}{rgb}{0.58,0,0.82}
 
-
-
-\title[hevm]{hevm, or: How I Learnt to Stop Worrying and Love the Symbolic Execution} 
+\title[hevm]{
+hevm, a flexible symbolic execution framework to verify EVM bytecode}
 \author[dxo, Soos, Paraskevopoulou]{dxo, \emph{Mate Soos}, Zoe Paraskevopoulou}
-\institute[Argot]{\large Argot Collective}
-\date{14th of November 2024, Bangkok, Thailand}
-%\logo{sdfsdaf}
+\institute[Argot]{\large Argot Collective (\url{https://argot.org})}
+\date{7th of March 2025, BSA Conference, Switzerland}
 
 
 \begin{document}
@@ -94,7 +89,7 @@ Fuzzing never finds this edge-case. Symbolic execution always finds it.
 
 
 
-\begin{frame}[fragile=singleslide]{Symbolic Execution -- straight line program}
+\begin{frame}[fragile=singleslide]{Symbolic Execution: straight line program}
 
 Most execution works by running instructions concretely:
 \begin{verbatim}
@@ -159,10 +154,10 @@ Symbolic execution is used in two major ways. One is to \textbf{validate static 
 
 Purely symbolic execution-based systems:
 \begin{itemize}
-\item \textbf{Certora Prover}: Based on backwards exploration and weakest precondition computation
-\item \textbf{EthBMC}: Bounded model checking-based exploration of contracts
 \item \textbf{halmos}: Written in python, with its own IR and internal rewrite engine
+\item \textbf{Certora Prover}: Based on backwards exploration and weakest precondition computation
 \item \textbf{KEVM}: K-framework based, allows to ``break out'' into K to prove lemmas
+\item \textbf{EthBMC}: Bounded model checking-based exploration of contracts
 \end{itemize}
 \end{frame}
 
@@ -259,9 +254,9 @@ hevm's symbolic executor is very powerful:
 \begin{itemize}
 \item \textbf{Operates on bytecode} so runs everything deployed to the chain
 \item Understands \textbf{all of EVM}: stack, call frames, memory, storage, calldata
-\item Can run on any \textbf{point in blockchain history} via RPC to an archive node
-\item Will pull all required \textbf{contracts} from the chain via RPC to a full node
-% \item Can be used to \textbf{chain together symbolic transactions}
+\item Can run on \textbf{any point in blockchain history} via RPC to an archive node
+\item Pull all required contracts from the chain via RPC to a full node
+\item Overapproximates unknown code
 \item Fuzzed against concrete execution (geth) for correctness
 \end{itemize}
 \bigskip
@@ -269,7 +264,7 @@ hevm's symbolic executor is very powerful:
 Limitations:
 \begin{itemize}
 \item Cannot deal with \textbf{symbolic gas} other than ignoring it
-\item \textbf{Symbolic offset/size memcopy} is not yet implemented
+\item \textbf{Symbolic offset/size memcopy} is not implemented, but is often unneeded
 \item \textbf{Loops and recursion} are explored only to a fixed depth
 \end{itemize}
 \end{frame}
@@ -557,8 +552,7 @@ issue(s):
     msg: "call target has unknown code"
     opcode: STATICCALL
     program counter: 14137
-    arguments:
-      0x0000000000000000000000000000000000000000
+    arguments: 0x0000000000000000000000000000000000000000
     [...]
 Found 1729225 total pairs of endstates
 No discrepancies found
