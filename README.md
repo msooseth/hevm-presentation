@@ -10,3 +10,5 @@
   [slides](https://github.com/msooseth/hevm-presentation/blob/main/HEVM-presentation%20CAV%2026th%20July%202024.pdf)
 * A version of this presentation was given at DevCon 2024, Bangkok, Thailand
   [slides](https://github.com/msooseth/hevm-presentation/blob/main/HEVM-presentation%20DevCon%20Nov%2014th.pdf)
+* A version of this presentation was given at BSA Blockchain Student Association Conference on the 7th of March 2025, EPFL, Lausanne, Switzerland
+  [slides](https://github.com/msooseth/hevm-presentation/blob/main/HEVM-presentation%20BSA%207th%20March%202025.pdf)
