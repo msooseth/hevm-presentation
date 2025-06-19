@@ -10,5 +10,5 @@
   [slides](https://github.com/msooseth/hevm-presentation/blob/main/HEVM-presentation%20CAV%2026th%20July%202024.pdf)
 * A version of this presentation was given at DevCon 2024, Bangkok, Thailand
   [slides](https://github.com/msooseth/hevm-presentation/blob/main/HEVM-presentation%20DevCon%20Nov%2014th.pdf)
-* A version of this presentation was given at BSA Blockchain Student Association Conference on the 7th of March 2025, EPFL, Lausanne, Switzerland
-  [slides](https://github.com/msooseth/hevm-presentation/blob/main/HEVM-presentation%20BSA%207th%20March%202025.pdf)
+* A version of this presentation was given at BSA Blockchain Student Association Conference on the 7th of March 2025, EPFL, Lausanne, Switzerland [slides](https://github.com/msooseth/hevm-presentation/blob/main/HEVM-presentation-BSA-Lausanne-March-2025.pdf)
+* A version of this presentation was given at the 2025 Dagstuhl seminar on  Testing Program Analyzers and Verifiers, in Dagstuhl, Germany [slides](https://github.com/msooseth/hevm-presentation/blob/main/HEVM-presentation-Dagstuhl-11-06-2025.pdf)
