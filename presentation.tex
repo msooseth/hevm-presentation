@@ -20,7 +20,8 @@
 hevm, a flexible symbolic execution framework to verify EVM bytecode}
 \author[dxo, Soos, Paraskevopoulou]{dxo, \emph{Mate Soos}, Zoe Paraskevopoulou}
 \institute[Argot]{\large Argot Collective (\url{https://argot.org})}
-\date{7th of March 2025, BSA Conference, Switzerland}
+\date{11th of June 2025, Dagstuhl Seminar
+Testing Program Analyzers and Verifiers \url{https://www.dagstuhl.de/25242}}
 
 
 \begin{document}
@@ -146,6 +147,21 @@ For symbolic execution, we end up having to follow two executions. This can beco
 \end{frame}
 
 
+\begin{frame}[fragile=singleslide]{EVM}
+\begin{itemize}
+    \item Stack machine
+    \item Everything is 256b by default, addresses are 160b
+    \item No undefined behaviour
+    \item No IO. No printing, disk, networking, etc.
+    \item Only has a few regions for data: returndata, calldata, memory, storage, (stack)
+    \item No pointers. One contiguous memory, calldata, and returndata region
+    \item No such thing as infinite loops: gas is a unit of execution that is always limited
+    \item No such thing as huge memory/storage usage: gas also limits memory and storage
+    \item There are calls to other code already deployed, sometimes not yet deployed (i.e. call to unknown code)
+\end{itemize}
+\end{frame}
+
+
 \begin{frame}{Related Work}
 
 Symbolic execution is used in two major ways. One is to \textbf{validate static code analysis} results, the other is \textbf{pure symbolic execution}. The first approach is followed by Oyente, sCompile, Mythril, etc. These are typically incomplete, and false positives are allowed.
@@ -170,13 +186,10 @@ Purely symbolic execution-based systems:
 \item Examines \emph{all}\footnote{loops/recursion is an issue, we have a loop/depth limit} execution paths from the starting state
 \item Finds the set of requirements to reach all failing paths
 \item Runs external SMT solver(s) to find input to reach them
-\item Displays call needed to trigger:
-\begin{itemize}
-    \item the fault: \texttt{hevm test}
-    \item the discrepancy: \texttt{hevm equivalence}
-\end{itemize}
+\item Displays call needed to trigger fault/discrepancy
 \end{itemize}
 \end{frame}
+
 
 
 %\begin{frame}[fragile=singleslide]{Symbolic Execution: example}
@@ -257,7 +270,6 @@ hevm's symbolic executor is very powerful:
 \item Can run on \textbf{any point in blockchain history} via RPC to an archive node
 \item Pull all required contracts from the chain via RPC to a full node
 \item Overapproximates unknown code
-\item Fuzzed against concrete execution (geth) for correctness
 \end{itemize}
 \bigskip
 
@@ -274,28 +286,6 @@ Limitations:
 \includegraphics[scale=0.6]{hevm-overview}
 \end{frame}
 
-
-\begin{frame}[fragile=singleslide]{Intermediate Representation}
-\small
-
-Through the symbolic execution engine we create an expression that captures all end-states. We then take each end-state out and filter it for things we are looking for, e.g. assertion failures. Let's take the example:
-
-\begin{Verbatim}[frame=single, framerule=0.2mm,framesep=2mm,fontsize=\small]
-function overflow(uint a) public pure {
-	uint b;
-	unchecked { b = a + 1;}
-	assert(b > a);
-}
-\end{Verbatim}
-
-The expression to generate a counterexamle for this could look like:
-
-\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
-PLEq (Add (Var "a") (Lit 1)) (Var "a")
-\end{Verbatim}
-
-Notice: we use less-or-equal, because we want a \textbf{counterexample}
-\end{frame}
 
 %\begin{frame}[fragile]{Intermediate Representation}
 %\begin{tikzpicture}[node distance=2cm]
@@ -517,84 +507,94 @@ Notice: we use less-or-equal, because we want a \textbf{counterexample}
 % \end{Verbatim}
 % \end{frame}
 
-\section{How to Use hevm}
-
-\begin{frame}[fragile=singleslide]{Using ``hevm test''}
-
-Install foundry [1]. Get static hevm binary [2]. Install z3 [3]. Add foundry test cases, and prepend with \texttt{``prove\_''} the ones you want hevm to check:
-
-\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
-import {Test} from "forge-std/Test.sol";
-contract MyContract is Test {
-  function prove_add_fail(uint x, uint y) public pure {
-      unchecked { 
-          uint256 z = x + y;
-          assert(z >= x);
-      } } }
-\end{Verbatim}
-
-\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
-forge build --ast && hevm test
-[RUNNING] prove_add_fail(uint256,uint256)
-   [FAIL] prove_add_fail(uint256,uint256)
-   Counterexample:
-     calldata: prove_add_fail(1,115792089237316195423570...)
-\end{Verbatim}
-\tiny [1] \url{https://github.com/foundry-rs/foundry} [2] \url{https://github.com/ethereum/hevm/releases} [3] \url{https://github.com/Z3Prover/z3}
-\end{frame}
-
-\begin{frame}[fragile=singleslide]{Using ``hevm equivalence''}
-\begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
-$ time --verbose hevm equivalence --code-a "0x...." --code-b "0x..."
-[WARNING] hevm was only able to partially explore the contract due to the following
-issue(s):
-  - Unexpected Symbolic Arguments to Opcode
-    msg: "call target has unknown code"
-    opcode: STATICCALL
-    program counter: 14137
-    arguments: 0x0000000000000000000000000000000000000000
-    [...]
-Found 1729225 total pairs of endstates
-No discrepancies found
-But the following issues occurred:
-      93x -> CopySlice with a symbolically sized region not currently implemented
-      2x -> SMT result timeout/unknown
-Command exited with non-zero status 1
-        User time (seconds): 45762.27
-        Elapsed (wall clock) time (h:mm:ss or m:ss): 34:32.70
-\end{Verbatim}
-\end{frame}
-
-\begin{frame}[fragile=singleslide]{References \& Pro Tips Using hevm}
-References:
+\section{What is a bug anyway?}
+\begin{frame}{What is a bug anyway?}
 \begin{itemize}
-    \item hevm repository: \url{https://github.com/ethereum/hevm/}
-    \item hevm user guide: \url{https://hevm.dev/}
-    \item Forge testing guide: \url{https://book.getfoundry.sh/forge/writing-tests}
+    \item I can steal the money due to e.g. overflow/reentrancy/logical error/etc bug
+    \item I can lock in the money due to liveness issues
+    \item I can exploit incorrect rounding in online exchanges to get better prices
+    \item I can borrow money to buy some asset, dump it in an automated market maker pushing its price to zero, then buy everything for zero.
+    \item Frontrunning: I can observe a transaction, see that it makes money, and replace the recipient of the transaction with my own address, so I get the money instead.
+    \item Sandwiching: I can see if someone is buying an asset, buy a lot of the asset before their transaction is executed, then sell it all off later for a higher price.
 \end{itemize}
 
 \bigskip
+And the list goes on. Some of these are ''clearly`` bugs. Some of them are abuse of systems (frontrunning). Most interesting oners are games played according to the rules, but not according to the spirit.
+\end{frame}
 
-Pro tips:
+\begin{frame}{What is a bug anyway? (cont.)}
 \begin{itemize}
-    \item Equivalence testing can be a useful way to check if a refactoring is correct
-    \item The spec of your contract is effectively its set of test cases
-    \item Write \textbf{postive, negative, and invariant} tests. Ex:
-        \begin{itemize}
-            \item Positive test: required number of signatures are met, transfer allowed
-            \item Negative test: required number of signatures are not met, transfer not allowed
-            \item Invariant test: after transfer, sum of balances is the same
-        \end{itemize}
-    \item Even if ``hevm test'' emits warnings, it still adds a level of assurance beyond pure fuzzing
-    % \item Think of hevm as a tool in your toolbox
-    % \item If you encounter a bug, don't be afraid to report it as a GitHub issue
+    \item We decided NOT to enforce any bug specification
+    \item Everything has to be specified by the user via an assertion
+    \item So we don't have a specification language
+    \item The spec has to be expressed in-line code via require/assert
+    \item We provide an interface where it's possible to specify pre/post-conditions
+    \item Separate tool is in the works that adds pre/post conditions to prevent the above
 \end{itemize}
+
+\bigskip
+This way we allow others to be opinionated, but we ourselves remain unopinionated.
+\end{frame}
+
+\section{Correctness}
+\begin{frame}{How we ensure correctness of hevm}
+\begin{itemize}
+    \item Concrete execution checked via eth test suite
+    \item Over 100 unit test for internal components (e.g. IR simplifications)
+    \item Over 100 end-to-end tests for symbolic execution
+    \item IR simplification checked via: generate IR via quickcheck $\rightarrow$ simplify IR $\rightarrow$ translate original IR and simplified IR to SMT, equivalence check $\rightarrow$ must be UNSAT
+    \item Symbolic execution checked via: random conctract generator $\rightarrow$ symbolic execution $\rightarrow$ concrete input $\rightarrow$ constant folding vs geth + concrete input $\rightarrow$ final state
+    \item Curated set of symbolic test cases checked against kontrol (KEVM) and halmos
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Bugs, issues, and inconveniences}
+\begin{itemize}
+    \item The IR $\rightarrow$ SMT translation was incorrect, it sometimes produced trivially UNSAT queries
+    \item Now we check if a != a' --- if it's also UNSAT, we know our translation is buggy
+    \item IR was not canonical, so two identical expressions could be different in IR, due to missing commutativity and associativity rewrites
+    \item geth behaviour is undefined for large ($>2^{64}$) memory usage, so memory overflow simplifications can be unsound
+    \item $\ldots$ so in fact some behaviour is undefined, but this is only a problem for compliers and symbolic execution systems
+    \item Since storage is limited, we have to limit counterexample sizes -- certain optimizations exploit limited memory
+    \item Once our tool started to be used by a larger tool, Echidna, in symbolic execution mode, a lot of edge-cases had to be dealt with via soft errors
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile=singleslide]{Where to find hevm}
+% References:
+hvm repository: \url{https://github.com/ethereum/hevm/}
+
+hevm user guide: \url{https://hevm.dev/}
+\bigskip
+
+Code: \qquad \qrcode[height=1in]{https://github.com/ethereum/hevm/}
+\qquad \qquad \qquad Paper: \qquad \qrcode[height=1in]{https://dl.acm.org/doi/10.1007/978-3-031-65627-9_22}
+
+% \bigskip
+
+% Pro tips:
+% \begin{itemize}
+%     \item Equivalence testing can be a useful way to check if a refactoring is correct
+%     \item The spec of your contract is effectively its set of test cases
+%     \item Write \textbf{postive, negative, and invariant} tests. Ex:
+%         \begin{itemize}
+%             \item Positive test: required number of signatures are met, transfer allowed
+%             \item Negative test: required number of signatures are not met, transfer not allowed
+%             \item Invariant test: after transfer, sum of balances is the same
+%         \end{itemize}
+%     \item Even if ``hevm test'' emits warnings, it still adds a level of assurance beyond pure fuzzing
+%     % \item Think of hevm as a tool in your toolbox
+%     % \item If you encounter a bug, don't be afraid to report it as a GitHub issue
+% \end{itemize}
 
 % \bigskip
 
 % Contributing: All PRs are welcome. Haskell can be a bit intimidating, but it's a very expressive language
 \end{frame}
 
+\begin{frame}{Thank you for your time!}
+    Thanks for listening!
+\end{frame}
 
 
 %\begin{frame}[fragile=singleslide]{Results}
@@ -642,31 +642,31 @@ Pro tips:
 % \end{frame}
 
 
-\section{Conclusions}
+% \section{Conclusions}
 
-\begin{frame}[fragile=singleslide]{Limitations \& Future Work}
-hevm has a number of inherent limitations:
+% \begin{frame}[fragile=singleslide]{Limitations \& Future Work}
+% hevm has a number of inherent limitations:
 
-\begin{itemize}
-\item Loops are challenging. We have an iteration limit until which loops are examined
-\item Recursion, and parametric calls can cause hevm to only partially explore the state
-\item Complicated mathematical expressions (e.g. division, modulo) can cause a challenge
-\item hevm is not verified, and neither are SMT solvers
-\end{itemize}
-\vspace{2ex}
+% \begin{itemize}
+% \item Loops are challenging. We have an iteration limit until which loops are examined
+% \item Recursion, and parametric calls can cause hevm to only partially explore the state
+% \item Complicated mathematical expressions (e.g. division, modulo) can cause a challenge
+% \item hevm is not verified, and neither are SMT solvers
+% \end{itemize}
+% \vspace{2ex}
 
-Future work:
-\begin{itemize}
-\item Symbolic CopySlice handling -- I finally have an idea :)
-\item Better handling of loops and recursion: include into IR, and solve for invariant via CHC
-\end{itemize}
+% Future work:
+% \begin{itemize}
+% \item Symbolic CopySlice handling -- I finally have an idea :)
+% \item Better handling of loops and recursion: include into IR, and solve for invariant via CHC
+% \end{itemize}
 
-\bigskip
+% \bigskip
 
-\quad  \qrcode[height=1cm]{https://github.com/ethereum/hevm/releases}
-\qquad \url{https://github.com/ethereum/hevm/releases}
+% \quad  \qrcode[height=1cm]{https://github.com/ethereum/hevm/releases}
+% \qquad \url{https://github.com/ethereum/hevm/releases}
 
-\end{frame}
+% \end{frame}
 
 %\section{Conclusions}
 %\begin{frame}[fragile=singleslide]{Conclusions}
@@ -691,5 +691,26 @@ Future work:
 %\end{frame}
 
 
+% \begin{frame}[fragile=singleslide]{Intermediate Representation}
+% \small
+
+% Through the symbolic execution engine we create an expression that captures all end-states. We then take each end-state out and filter it for things we are looking for, e.g. assertion failures. Let's take the example:
+
+% \begin{Verbatim}[frame=single, framerule=0.2mm,framesep=2mm,fontsize=\small]
+% function overflow(uint a) public pure {
+% 	uint b;
+% 	unchecked { b = a + 1;}
+% 	assert(b > a);
+% }
+% \end{Verbatim}
+
+% The expression to generate a counterexamle for this could look like:
+
+% \begin{Verbatim}[frame=single, framerule=0.2mm, framesep=2mm,fontsize=\small]
+% PLEq (Add (Var "a") (Lit 1)) (Var "a")
+% \end{Verbatim}
+
+% Notice: we use less-or-equal, because we want a \textbf{counterexample}
+% \end{frame}
 
 \end{document}
