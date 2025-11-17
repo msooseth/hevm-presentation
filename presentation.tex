@@ -84,9 +84,8 @@ hevm, new frontiers in symbolic execution of EVM bytecode}
 % slower but complete.}
 % \end{frame}
 
-
+\section{Symbolic Execution}
 \begin{frame}[fragile=singleslide]{Symbolic Execution: straight line program}
-
 Most execution works by running instructions concretely:
 \begin{verbatim}
 ---             ax: 1   , bx: 2
@@ -158,7 +157,6 @@ For symbolic execution, we end up having to follow two executions. This can beco
 
 
 \begin{frame}{Related Work}
-
 Symbolic execution is used in two major ways. One is to \textbf{validate static
 code analysis} results, the other is \textbf{pure symbolic execution}. The
 first approach is followed by Oyente, sCompile, Mythril, etc. These are
@@ -191,6 +189,7 @@ Purely symbolic execution-based systems:
 % \end{itemize}
 % \end{frame}
 
+\section{hevm's Symbolic Executor}
 \begin{frame}{hevm's Symbolic Executor}
 hevm's symbolic executor is very powerful:
 \begin{itemize}
@@ -210,7 +209,6 @@ Limitations:
 \item \textbf{Loops and recursion} are explored only to a fixed depth
 \end{itemize}
 \end{frame}
-
 
 %\begin{frame}[fragile=singleslide]{Symbolic Execution: example}
 %Say your code looks like this:
@@ -583,6 +581,121 @@ Limitations:
 % \end{itemize}
 % \end{frame}
 
+\begin{frame}{Unique Selling Points of hevm}
+Can be used as a \textbf{library}:
+\begin{itemize}
+    \item Echidna uses hevm's concrete execution for its fuzzer
+    \item New version of Echidna will be able to also use
+        hevm's symbolic execution engine to complement its fuzzer
+\end{itemize}
+\bigskip
+
+Can be used as an \textbf{equivalence checker}:
+\begin{itemize}
+    \item Used by Act, a declarative smart contract language, to check
+        equivalence of the declarative description
+        against the actual compiled contract
+    \item Used by Solidity's fuzzer infrastructure to check compiler
+        optimizations
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile=singleslide]{Equivalence Checking with hevm}
+hevm compares all externally visible behaviours of two contracts:
+\begin{itemize}
+    \item state
+    \item return values
+    \item reverts
+\end{itemize}
+but not events, gas usage, or intermediate states and values.
+\bigskip
+
+\begin{minipage}[t]{0.45\textwidth}
+\textbf{Original contract}
+\begin{Verbatim}[fontsize=\small]
+function f(uint x) returns (uint) {
+    for(uint i = 0; i < 4; i++) {
+        x += 1;
+    }
+    return x;
+}
+\end{Verbatim}
+\end{minipage}\qquad
+\begin{minipage}[t]{0.45\textwidth}
+\textbf{Gas optimized contract}
+\begin{Verbatim}[fontsize=\small]
+function f(uint x) returns (uint) {
+    x += 4;
+    return x;
+}
+\end{Verbatim}
+\end{minipage}
+\end{frame}
+
+\section{Improvements Since Devcon 2024}
+\begin{frame}{Release Highlights}
+\begin{itemize}
+    \item Overapproximation for \texttt{STATICCALL}, \texttt{BALANCE},
+        \texttt{EXTCODESIZE} and \texttt{EXTCODEHASH}
+    \item SMT solver now used to concretize symbolic expressions and continue execution
+    \item Multiple solutions for symbolic expressions via iterative SMT solving
+    \item Improved aliasing for symbolic and concrete addresses
+    \item Constant propagation for symbolic values
+    \item Branch depth and width can be limited
+    \item Major CLI improvements for better UX
+\end{itemize}
+\end{frame}
+
+\begin{frame}{News since Devcon cont.}
+\begin{itemize}
+    \item Counterexamples are now validated via concrete execution
+    \item Mapping of warnings and errors to source lines
+    \item Better RPC caching\&mocking framework via \texttt{--cache-dir}:
+      persistent shared cache, single HTTPS session
+    \item Allowing to restrict unknown address resolution to deployed contracts
+        (\texttt{--only-deployed})
+    \item Keccak computations extracted and asserted for correctness
+    \item Better collection of storage reads for counterexamples
+    \item Upcoming: queued symbolic execution for more robust exploration of
+        large contracts
+\end{itemize}
+\end{frame}
+
+\begin{frame}{News since Devcon: Minor Things}
+\begin{itemize}
+    \item Robust handling of invalid cheatcodes/precompiles
+    \item Geth-compatible JSONL traces via \texttt{--json-trace}
+    \item Updated forge and forge-std versions
+    \item Simplified printed expressions in symbolic mode
+    \item More robust calldata decoding, even with trailing bytes
+    \item More aggressive calldata shrinking
+    % \item Minor bugfixes to IR simplification
+    % \item Faster \texttt{word256Bytes} and \texttt{word160Bytes}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Release Highlights: Minor Things cont}
+\begin{itemize}
+    \item New rewrite and simplification rules
+    \item Read bytecode directly from files, supporting large contracts
+    \item Better handling of symbolic \texttt{block.number} in library mode
+    \item Optimized memory representation and operations
+    \item Many bugfixes: infinite recursion, out-of-bounds reads, duplicate
+        assertions, and more
+    \item Test suite improvements and faster test running
+    \item Documentation and tutorial updates
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Overall Effect of Improvements}
+\begin{itemize}
+    \item Better first-time user experience
+    \item Easier-to-understand counterexamples
+    \item More robust handling of real-world contracts
+\end{itemize}
+\end{frame}
+
+
 \begin{frame}[fragile=singleslide]{Where to find hevm}
 % References:
 hvm repository: \url{https://github.com/argotorg/hevm/}
@@ -591,7 +704,7 @@ hevm user guide: \url{https://hevm.dev/}
 \bigskip
 
 Code: \qquad \qrcode[height=1in]{https://github.com/argotorg/hevm/}
-\qquad \qquad \qquad Paper: \qquad \qrcode[height=1in]{https://dl.acm.org/doi/10.1007/978-3-031-65627-9_22}
+\qquad \qquad \qquad Research Paper: \qquad \qrcode[height=1in]{https://dl.acm.org/doi/10.1007/978-3-031-65627-9_22}
 
 % \bigskip
 
