@@ -18,9 +18,10 @@
 
 \title[hevm]{
 hevm, new frontiers in symbolic execution of EVM bytecode}
-\author[dxo, Soos, Blicha, Paraskevopoulou\\
-With help from the Echidna team, esp. Gustavo Grieco
-]{dxo, \emph{Mate Soos}, Martin Blicha, Zoe Paraskevopoulou}
+\author[dxo, Soos, Blicha, Paraskevopoulou]
+{dxo, \emph{Mate Soos}, Martin Blicha, Zoe Paraskevopoulou,\\
+    with help from the Echidna team, esp. Gustavo Grieco
+}
 \institute[Argot]{\large Argot Collective (\url{https://argot.org})}
 \date{19th of November 2025, Devconnect Argentina}
 
@@ -728,12 +729,26 @@ function f(uint x) returns (uint) {
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Overall Effect of Improvements}
+\begin{frame}[fragile=singleslide]{Overall Effect of Improvements}
 \begin{itemize}
     \item Better first-time user experience
     \item Easier-to-understand counterexamples
     \item More robust handling of real-world contracts
 \end{itemize}
+
+Example:
+\textbf{Verifying abdk-math-64}
+\begin{Verbatim}
+hevm test --root abdk-math-64.64-verification --max-depth 70 \\
+    --solver bitwuzla --match prove_inv_identity
+[...]
+Exploration finished, 58 branch(es) to check in call prefix 0xacce097a
+[FAIL] prove_inv_identity
+Counterexample:   [validated]
+   calldata: prove_inv_identity(-108003701288662363396026832958930103201)
+[WARNING] hevm was only able to partially explore the test prove_inv_identity
+3x -> SMT solver says: Result unknown by SMT solver
+\end{Verbatim}
 \end{frame}
 
 
