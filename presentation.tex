@@ -559,7 +559,7 @@ Limitations:
     \centering
     An effort to verify mathematical properties in ABDK Math 64x64 using echidna/hevm.
     \vfill
-    \includegraphics[scale=0.10]{abdk-table-1} \includegraphics[scale=0.10]{abdk-table-2}
+    \includegraphics[scale=0.15]{abdk-table-1}\quad\includegraphics[scale=0.15]{abdk-table-2}
     \vfill
     \textbf{Verified}: 34/57 $\mathbf{(59.65\%)}$
     \vfill
@@ -591,6 +591,23 @@ Limitations:
     SMT result: Qed
     \end{Verbatim}
 
+\end{frame}
+
+\begin{frame}[fragile]{Finding a bug in ABDK Math 64.64's \texttt{prove\_inv\_identity}}
+\begin{Verbatim}
+hevm test --root abdk-math-64.64-verification --max-depth 70 \\
+    --solver bitwuzla --match prove_inv_identity
+\end{Verbatim}
+
+Output:
+\begin{Verbatim}
+Exploration finished, 58 branch(es) to check in call prefix 0xacce097a
+[FAIL] prove_inv_identity
+Counterexample:   [validated]
+   calldata: prove_inv_identity(-108003701288662363396026832958930103201)
+[WARNING] hevm was only able to partially explore the test prove_inv_identity
+3x -> SMT solver says: Result unknown by SMT solver
+\end{Verbatim}
 \end{frame}
 
 
@@ -736,19 +753,6 @@ function f(uint x) returns (uint) {
     \item More robust handling of real-world contracts
 \end{itemize}
 
-Example:
-\textbf{Verifying abdk-math-64}
-\begin{Verbatim}
-hevm test --root abdk-math-64.64-verification --max-depth 70 \\
-    --solver bitwuzla --match prove_inv_identity
-[...]
-Exploration finished, 58 branch(es) to check in call prefix 0xacce097a
-[FAIL] prove_inv_identity
-Counterexample:   [validated]
-   calldata: prove_inv_identity(-108003701288662363396026832958930103201)
-[WARNING] hevm was only able to partially explore the test prove_inv_identity
-3x -> SMT solver says: Result unknown by SMT solver
-\end{Verbatim}
 \end{frame}
 
 
