@@ -554,6 +554,45 @@ Limitations:
 % unopinionated.
 % \end{frame}
 
+\begin{frame}{Example: The Great Verification of ABDK Math 64.64}
+    \centering
+    An effort to verify mathematical properties in ABDK Math 64x64 using echidna/hevm.
+    \vfill
+    \includegraphics[scale=0.10]{abdk-table-1} \includegraphics[scale=0.10]{abdk-table-2}
+    \vfill
+    \textbf{Verified}: 34/57 $\mathbf{(59.65\%)}$
+    \vfill
+    \url{https://github.com/gustavo-grieco/abdk-math-64.64-verification}
+\end{frame}
+
+\begin{frame}[fragile]{\((x + y) + z = x + (y + z)\)}
+
+    \centering
+    \begin{Verbatim}[framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
+    function prove_add_associative(int128 x, int128 y, int128 z) public pure {
+        int128 x_y = add(x, y);
+        int128 y_z = add(y, z);
+        int128 xy_z = add(x_y, z);
+        int128 x_yz = add(x, y_z);
+
+        assert(xy_z == x_yz);
+    }
+    \end{Verbatim}
+    \rule{0.99\linewidth}{0.4pt}
+    \vfill
+    \begin{Verbatim}[framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
+    [RUNNING] prove_add_associative(int128,int128,int128)
+    Exploring call prefix 0x6727ee5c
+    Flattening expression
+    Exploration finished, 14 branch(es) to check in call prefix 0x6727ee5c
+    Keccak preimages in state: 0
+    Checking for reachability of 1 potential property violation(s) in call prefix 0x6727ee5c
+    SMT result: Qed
+    \end{Verbatim}
+
+\end{frame}
+
+
 % \section{Correctness}
 % \begin{frame}{How we ensure correctness of hevm}
 % \begin{itemize}
