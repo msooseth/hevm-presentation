@@ -593,22 +593,22 @@ Limitations:
 
 \end{frame}
 
-\begin{frame}[fragile]{Finding a bug in ABDK Math 64.64's \texttt{prove\_inv\_identity}}
-\begin{Verbatim}
-hevm test --root abdk-math-64.64-verification --max-depth 70 \\
-    --solver bitwuzla --match prove_inv_identity
-\end{Verbatim}
+% \begin{frame}[fragile]{Finding a bug in ABDK Math 64.64's \texttt{prove\_inv\_identity}}
+% \begin{Verbatim}
+% hevm test --root abdk-math-64.64-verification --max-depth 70 \\
+%     --solver bitwuzla --match prove_inv_identity
+% \end{Verbatim}
 
-Output:
-\begin{Verbatim}
-Exploration finished, 58 branch(es) to check in call prefix 0xacce097a
-[FAIL] prove_inv_identity
-Counterexample:   [validated]
-   calldata: prove_inv_identity(-108003701288662363396026832958930103201)
-[WARNING] hevm was only able to partially explore the test prove_inv_identity
-3x -> SMT solver says: Result unknown by SMT solver
-\end{Verbatim}
-\end{frame}
+% Output:
+% \begin{Verbatim}
+% Exploration finished, 58 branch(es) to check in call prefix 0xacce097a
+% [FAIL] prove_inv_identity
+% Counterexample:   [validated]
+%    calldata: prove_inv_identity(-108003701288662363396026832958930103201)
+% [WARNING] hevm was only able to partially explore the test prove_inv_identity
+% 3x -> SMT solver says: Result unknown by SMT solver
+% \end{Verbatim}
+% \end{frame}
 
 
 % \section{Correctness}
@@ -640,14 +640,27 @@ Counterexample:   [validated]
 % \end{itemize}
 % \end{frame}
 
+
 \begin{frame}{Unique Selling Points of hevm}
+It is \textbf{easy to use}:
+\begin{itemize}
+    \item Uses forge-std cheatcodes for easy test setup
+    % \item Can be used as a \textbf{standalone tool}, no need for pypi/npm/etc
+    \item Works on any EVM contract deployed on any chain supported by an RPC node
+    \item No need to recompile contracts, or have their source code
+\end{itemize}
+% \texttt{hevm symbolic --rpc-url RPC\_URL --contract ADDR --match FUNCTION\_NAME}
+\smallskip
+
 Can be used as a \textbf{library}:
 \begin{itemize}
     \item Echidna uses hevm's concrete execution for its fuzzer
     \item New version of Echidna will be able to also use
         hevm's symbolic execution engine to complement its fuzzer
+    \item Such combined approach allows it to combine the
+        ``best of both worlds''
 \end{itemize}
-\bigskip
+\smallskip
 
 Can be used as an \textbf{equivalence checker}:
 \begin{itemize}
@@ -752,19 +765,37 @@ function f(uint x) returns (uint) {
     \item Easier-to-understand counterexamples
     \item More robust handling of real-world contracts
 \end{itemize}
-
-\end{frame}
-
-
-\begin{frame}[fragile=singleslide]{Where to find hevm}
-% References:
-hvm repository: \url{https://github.com/argotorg/hevm/}
-
-hevm user guide: \url{https://hevm.dev/}
 \bigskip
 
-Code: \qquad \qrcode[height=1in]{https://github.com/argotorg/hevm/}
-\qquad \qquad \qquad Research Paper: \qquad \qrcode[height=1in]{https://dl.acm.org/doi/10.1007/978-3-031-65627-9_22}
+Upcoming changes:
+\begin{itemize}
+    \item Queued symbolic execution for better exploration of large contracts
+    \item Better separation of symbolic/concrete execution modes
+    \item Dumping execution traces' calldata for fuzzers to improve their corpus
+
+        e.g. Echidna -- but see Alex's talk later today!
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Conclusions}
+\begin{itemize}
+    \item Fully-featured symbolic\&concrete execution engine for EVM bytecode
+    \item Easy-to-use: test setup via forge-std cheatcodes, standalone CLI
+    \item Runs on any point in chain history via RPC
+    \item Highly optimized IR with extensive simplifications
+    \item Tight integration with an SMT solver for finding buggy inputs
+    \item Used in practice by multiple tools and projects
+    \item Library that can be integrated into other tools
+    \item Actively maintained open-source project
+\end{itemize}
+\bigskip
+
+Repository: \url{https://github.com/argotorg/hevm/}
+\bigskip
+
+User guide: \url{https://hevm.dev/}
+% Code: \qquad \qrcode[height=0.5in]{https://github.com/argotorg/hevm/}
+% Research Paper: \qquad \qrcode[height=0.5in]{https://dl.acm.org/doi/10.1007/978-3-031-65627-9_22}
 
 % \bigskip
 
@@ -786,10 +817,6 @@ Code: \qquad \qrcode[height=1in]{https://github.com/argotorg/hevm/}
 % \bigskip
 
 % Contributing: All PRs are welcome. Haskell can be a bit intimidating, but it's a very expressive language
-\end{frame}
-
-\begin{frame}{Thank you for your time!}
-    Thanks for listening!
 \end{frame}
 
 
