@@ -557,12 +557,14 @@ Limitations:
 
 \begin{frame}{Example: The Great Verification of ABDK Math 64.64}
     \centering
-    An effort to verify mathematical properties in ABDK Math 64x64 using echidna/hevm.
+    An effort to verify mathematical properties in ABDK Math 64x64 using echidna/hevm.\footnote{
+    ABDK Math 64x64: Library of mathematical functions operating with signed 64.64-bit fixed point numbers.}
     \vfill
-    \includegraphics[scale=0.15]{abdk-table-1}\quad\includegraphics[scale=0.15]{abdk-table-2}
-    \vfill
+
+    \includegraphics[scale=0.13]{abdk-table-1}\quad\includegraphics[scale=0.13]{abdk-table-2}
+
     \textbf{Verified}: 34/57 $\mathbf{(59.65\%)}$
-    \vfill
+
     \url{https://github.com/gustavo-grieco/abdk-math-64.64-verification}
 \end{frame}
 
@@ -708,7 +710,7 @@ function f(uint x) returns (uint) {
 \begin{frame}{Improvements since DevCon: Highlights}
 \begin{itemize}
     \item Overapproximation for \texttt{STATICCALL}, \texttt{BALANCE},
-        \texttt{EXTCODESIZE} and \texttt{EXTCODEHASH}
+        \texttt{EXTCODESIZE}, and \texttt{EXTCODEHASH}
     \item SMT solver now used to concretize symbolic expressions and continue execution
     \item Multiple solutions for symbolic expressions via iterative SMT solving
     \item Improved aliasing for symbolic and concrete addresses
@@ -725,7 +727,7 @@ function f(uint x) returns (uint) {
     \item Better RPC caching\&mocking framework via \texttt{--cache-dir}:
       persistent shared cache, single HTTPS session
     \item Allowing to restrict unknown address resolution to deployed contracts
-        (\texttt{--only-deployed})
+        via \texttt{--only-deployed}
     \item Keccak computations extracted and asserted for correctness
     \item Better collection of storage reads for counterexamples
     \item Upcoming: queued symbolic execution for more robust exploration of
@@ -782,7 +784,7 @@ Upcoming changes:
 \begin{frame}{Conclusions}
 \begin{itemize}
     \item Fully-featured symbolic\&concrete execution engine for EVM bytecode
-    \item Easy-to-use: test setup via forge-std cheatcodes, standalone CLI
+    \item Easy-to-use: test setup via forge cheatcodes, standalone CLI
     \item Runs on any point in chain history via RPC
     \item Highly optimized IR with extensive simplifications
     \item Tight integration with an SMT solver for finding buggy inputs
