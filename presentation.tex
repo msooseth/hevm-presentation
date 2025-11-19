@@ -192,7 +192,7 @@ Purely symbolic execution-based systems:
 % \end{itemize}
 % \end{frame}
 
-\section{hevm's Symbolic Executor}
+\section{Nitty-gritty Internals}
 \begin{frame}{hevm's Symbolic Executor}
 hevm's symbolic executor is very powerful:
 \begin{itemize}
@@ -247,6 +247,18 @@ Limitations:
 %Here, instead of a known-bad state, we validate that we are always in state that matches our expectations.
 %\end{frame}
 
+% \section{Internals}
+\begin{frame}{hevm internals}
+\centering
+\includegraphics[scale=0.6]{hevm-overview}
+\end{frame}
+
+% \section{Intermediate Representation}
+\begin{frame}{Intermediate Representation}
+    \centering
+    \includegraphics[scale=0.88]{IR}
+\end{frame}
+
 \begin{frame}{hevm: Symbolic Execution for Counterexample Generation}
 \centering
 \includegraphics[scale=0.45]{pipeline}
@@ -282,17 +294,6 @@ Limitations:
 %
 %hevm can give the exact \textbf{call to trigger the discrepancy} between the two functions. This way, you can safely improve the gas performance of your code.
 %\end{frame}
-
-% \begin{frame}{hevm internals}
-% \centering
-% \includegraphics[scale=0.6]{hevm-overview}
-% \end{frame}
-
-% \section{Intermediate Representation}
-% \begin{frame}{Intermediate Representation}
-%     \centering
-%     \includegraphics[scale=0.88]{IR}
-% \end{frame}
 
 %\begin{frame}[fragile]{Intermediate Representation}
 %\begin{tikzpicture}[node distance=2cm]
@@ -595,23 +596,6 @@ Limitations:
 
 \end{frame}
 
-% \begin{frame}[fragile]{Finding a bug in ABDK Math 64.64's \texttt{prove\_inv\_identity}}
-% \begin{Verbatim}
-% hevm test --root abdk-math-64.64-verification --max-depth 70 \\
-%     --solver bitwuzla --match prove_inv_identity
-% \end{Verbatim}
-
-% Output:
-% \begin{Verbatim}
-% Exploration finished, 58 branch(es) to check in call prefix 0xacce097a
-% [FAIL] prove_inv_identity
-% Counterexample:   [validated]
-%    calldata: prove_inv_identity(-108003701288662363396026832958930103201)
-% [WARNING] hevm was only able to partially explore the test prove_inv_identity
-% 3x -> SMT solver says: Result unknown by SMT solver
-% \end{Verbatim}
-% \end{frame}
-
 
 % \section{Correctness}
 % \begin{frame}{How we ensure correctness of hevm}
@@ -780,6 +764,25 @@ Upcoming changes:
         e.g. Echidna -- but see Alex's talk later today!
 \end{itemize}
 \end{frame}
+
+\begin{frame}[fragile]{Example: running on ABDK Math 64.64's \texttt{prove\_inv\_identity}}
+\begin{Verbatim}
+hevm test --root abdk-math-64.64-verification --max-depth 70
+    --solver bitwuzla --match prove_inv_identity
+\end{Verbatim}
+\bigskip
+
+Output:
+\begin{Verbatim}
+Exploration finished, 58 branch(es) to check in call prefix 0xacce097a
+[FAIL] prove_inv_identity
+Counterexample:   [validated]
+   calldata: prove_inv_identity(-108003701288662363396026832958930103201)
+[WARNING] hevm was only able to partially explore the test prove_inv_identity
+3x -> SMT solver says: Result unknown by SMT solver
+\end{Verbatim}
+\end{frame}
+
 
 \begin{frame}{Conclusions}
 \begin{itemize}
