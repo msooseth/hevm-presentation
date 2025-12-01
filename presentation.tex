@@ -259,6 +259,22 @@ Limitations:
     \includegraphics[scale=0.88]{IR}
 \end{frame}
 
+ \begin{frame}[fragile=singleslide]{Intermediate Representation: Simplification}
+ We do all the following rewrites to fixedpoint:
+ \begin{itemize}
+ \item Constant folding
+ \item Canonicalization of all commutative operators (concrete value first)
+ \item Canonicalization of all less-than/greater-than/etc operators
+ \item Canonicalization of all Keccak expressions to match Solidity patterns
+ \item Stripping writes when they are not read
+ \item Stripping reads when they are not used
+ \item (In)equality propagation
+ \item All meaningful rewrites, such as min/max/add+sub/add+add/sub+sub/etc.
+ \item Special rewrite rules for array/map lookups and other Solidity patterns
+ \end{itemize}
+ \end{frame}
+
+
 \begin{frame}{hevm: Symbolic Execution for Counterexample Generation}
 \centering
 \includegraphics[scale=0.45]{pipeline}
@@ -433,21 +449,6 @@ Limitations:
  % \end{frame}
 
 % DEVCON maybe add?
- % \begin{frame}[fragile=singleslide]{Intermediate Representation: Simplification}
- % We do all the following rewrites to fixedpoint:
- % \begin{itemize}
- % \item Constant folding
- % \item Canonicalization of all commutative operators (concrete value first)
- % \item Canonicalization of all less-than/greater-than/etc operators
- % \item Canonicalization of all Keccak expressions to match Solidity patterns
- % \item Stripping writes when they are not read
- % \item Stripping reads when they are not used
- % \item (In)equality propagation
- % \item All meaningful rewrites, such as min/max/add+sub/add+add/sub+sub/etc.
- % \item Special rewrite rules for array/map lookups and other Solidity patterns
- % \end{itemize}
- % \end{frame}
-
  % \begin{frame}[fragile=singleslide]{Intermediate Representation: Haskell to the Rescue}
 
  % Haskell supports algebraic data types (ADTs), so our intermediate representation (IR) can be fully typed. Furthermore, Haskell supports pattern matching, so our rewrite rules are easy to read \& write:
@@ -570,7 +571,6 @@ Limitations:
 \end{frame}
 
 \begin{frame}[fragile]{\((x + y) + z = x + (y + z)\)}
-
     \centering
     \begin{Verbatim}[framerule=0.2mm, framesep=2mm,fontsize=\footnotesize]
     function prove_add_associative(int128 x, int128 y, int128 z) public pure {
@@ -593,7 +593,6 @@ Limitations:
     Checking for reachability of 1 potential property violation(s) in call prefix 0x6727ee5c
     SMT result: Qed
     \end{Verbatim}
-
 \end{frame}
 
 
